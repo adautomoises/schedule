@@ -1,33 +1,61 @@
-import { useNavigate } from "react-router-dom";
-import { Button } from "@mui/material";
+import { IconButton, Menu, MenuItem } from "@mui/material";
 import { Container } from "./styles";
-import { Book } from "@mui/icons-material";
+import { AccountCircle, NotificationsNone, Search } from "@mui/icons-material";
+import { useAuth } from "../../../../context/userContext";
+import { useState } from "react";
 
 export function Header() {
-  const navigate = useNavigate();
+  const { UserSignOut } = useAuth();
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleSignOut = () => {
+    UserSignOut();
+    setAnchorEl(null);
+    window.location.reload();
+  };
 
   return (
     <Container>
       <div>
-        <Book color="primary" style={{ fontSize: "64px" }} />
+        <IconButton>
+          <Search />
+        </IconButton>
       </div>
       <div>
-        <Button
-          variant="contained"
-          onClick={() => {
-            navigate("/entrar");
-          }}
-        >
-          Entrar
-        </Button>
-        <Button
-          variant="text"
-          onClick={() => {
-            navigate("/cadastrar");
-          }}
-        >
-          Cadastrar
-        </Button>
+        <IconButton>
+          <NotificationsNone />
+        </IconButton>
+        <div>
+          <IconButton
+            id="basic-button"
+            aria-controls={open ? "basic-menu" : undefined}
+            aria-haspopup="true"
+            aria-expanded={open ? "true" : undefined}
+            onClick={handleClick}
+          >
+            <AccountCircle />
+          </IconButton>
+          <Menu
+            id="basic-menu"
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleClose}
+            MenuListProps={{
+              "aria-labelledby": "basic-button",
+            }}
+          >
+            <MenuItem onClick={handleClose}>Perfil</MenuItem>
+            <MenuItem onClick={handleSignOut}>Sair</MenuItem>
+          </Menu>
+        </div>
       </div>
     </Container>
   );

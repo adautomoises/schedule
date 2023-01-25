@@ -6,8 +6,15 @@ export const Container = styled.main`
 
   display: flex;
   justify-content: flex-start;
-  align-items: center;
-  flex-direction: column;
+  align-items: flex-start;
+`;
 
-  gap: 1rem;
+export const View = styled.main`
+  width: 100%;
+  height: 100vh;
+
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-direction: column;
 `;
