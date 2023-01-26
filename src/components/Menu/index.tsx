@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import api from "../../../../services/api";
-import { useAuth } from "../../../../context/userContext";
+import api from "../../services/api";
+import { useAuth } from "../../context/userContext";
 
 import {
   AccountCircle,
@@ -50,7 +50,13 @@ export function Menu() {
   return (
     <Container>
       <Logo>
-        <Book color="primary" style={{ fontSize: "64px" }} />
+        <Book
+          color="primary"
+          style={{ fontSize: "64px" }}
+          onClick={() => {
+            navigate("/");
+          }}
+        />
       </Logo>
       {isAuth ? (
         <UserInfo>
@@ -71,7 +77,11 @@ export function Menu() {
             <Today />
             <span>Agenda</span>
           </NavButton>
-          <NavButton>
+          <NavButton
+            onClick={() => {
+              navigate("/contatos");
+            }}
+          >
             <PermContactCalendar />
             <span>Contatos</span>
           </NavButton>

@@ -1,8 +1,8 @@
 import { IconButton, Menu, MenuItem } from "@mui/material";
 import { Container } from "./styles";
 import { AccountCircle, NotificationsNone, Search } from "@mui/icons-material";
-import { useAuth } from "../../../../context/userContext";
 import { useState } from "react";
+import { useAuth } from "../../context/userContext";
 
 export function Header() {
   const { UserSignOut } = useAuth();
