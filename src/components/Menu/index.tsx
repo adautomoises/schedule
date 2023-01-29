@@ -46,7 +46,7 @@ export function Menu() {
       })
       .catch((error: Error) => console.log(error));
   }, [setUser]);
-
+  
   return (
     <Container>
       <Logo>
