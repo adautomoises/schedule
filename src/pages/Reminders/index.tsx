@@ -10,25 +10,17 @@ import {
   Modal,
   FormControl,
   InputLabel,
+  Checkbox,
 } from "@mui/material";
 
 import { AxiosError } from "axios";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../../services/api";
 import { useForm } from "react-hook-form";
 
 import { Container, Header, Cards } from "./styles";
-import { Add, Search } from "@mui/icons-material";
-
-const bull = (
-  <Box
-    component="span"
-    sx={{ display: "inline-block", mx: "2px", transform: "scale(0.8)" }}
-  >
-    •
-  </Box>
-);
+import { Add, Cancel, Delete, Done } from "@mui/icons-material";
 
 const style = {
   position: "absolute" as "absolute",
@@ -44,6 +36,22 @@ const style = {
   flexDirection: "column",
   gap: 1,
 };
+const styleTasks = {
+  position: "absolute" as "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 400,
+  bgcolor: "background.paper",
+  border: "2px solid #000",
+  boxShadow: 24,
+  p: 4,
+  display: "flex",
+  flexDirection: "column",
+  gap: 1,
+  justifyContent: "center",
+  alignItems: "center",
+};
 
 interface IErrorResponse {
   message: string;
@@ -54,6 +62,7 @@ interface IFormInputs {
   date: Date;
   description: string;
   title: string;
+  status: string;
 }
 
 interface UserNotes {
@@ -75,6 +84,12 @@ interface UserNotes {
   uuid: string;
 }
 
+interface TaskProps {
+  description: string;
+  status: string;
+  uuid: string;
+}
+
 function Reminders() {
   const scheduleUUID = localStorage.getItem(
     "@schedule:user-schedule-uuid-1.0.0"
@@ -85,16 +100,23 @@ function Reminders() {
 
   const [openModalNewNote, setOpenModalNewNote] = useState(false);
   const handleOpenModalNewNote = () => setOpenModalNewNote(true);
-  const handleCloseModalNewNote = () => setOpenModalNewNote(false);
+  const handleCloseModalNewNote = () => {
+    reset();
+    setOpenModalNewNote(false);
+  };
+
+  const [NewTask, setNewTask] = useState<boolean>(false);
 
   const [selectedItem, setSelectedItem] = useState<UserNotes>();
-
   const [openModalViewNote, setOpenModalViewNote] = useState(false);
   const handleOpenModalViewNote = (item: UserNotes) => {
     setSelectedItem(item);
     setOpenModalViewNote(true);
   };
-  const handleCloseModalViewNote = () => setOpenModalViewNote(false);
+  const handleCloseModalViewNote = () => {
+    setOpenModalViewNote(false);
+    reset();
+  };
 
   const createNewNote = (data: IFormInputs) => {
     let request = {
@@ -121,6 +143,83 @@ function Reminders() {
         }
       });
   };
+  const deleteNote = () => {
+    api
+      .delete(`/notes`, {
+        params: {
+          uuid: selectedItem?.uuid,
+        },
+      })
+      .then((response) => {
+        handleCloseModalNewNote();
+        window.location.reload();
+      })
+      .catch((error: AxiosError<IErrorResponse>) => {
+        if (error.response) {
+          console.log(error.response.data.message);
+        }
+      });
+  };
+
+  const createNewTask = (data: IFormInputs) => {
+    let request = {
+      description: data.description,
+      status: "NOT_COMPLETE",
+    };
+
+    api
+      .post("/notes/taskNotes", request, {
+        params: {
+          noteUUID: selectedItem?.uuid,
+        },
+      })
+      .then((response) => {
+        window.location.reload();
+      })
+      .catch((error: AxiosError<IErrorResponse>) => {
+        if (error.response) {
+          console.log(error.response.data.message);
+        }
+      });
+  };
+
+  const deleteTask = (taskUUID: string) => {
+    api
+      .delete("/notes/taskNotes", {
+        params: {
+          taskUUID: taskUUID,
+        },
+      })
+      .then((response) => {
+        window.location.reload();
+      })
+      .catch((error: AxiosError<IErrorResponse>) => {
+        if (error.response) {
+          console.log(error.response.data.message);
+        }
+      });
+  };
+
+  const updateTask = (task: TaskProps) => {
+    let request = {
+      status: `${task.status === "COMPLETE" ? "NOT_COMPLETE" : "COMPLETE"}`,
+    };
+
+    api
+      .patch("/notes/taskNotes", request, {
+        params: {
+          taskUUID: task.uuid,
+        },
+      })
+      .then((response) => {
+        window.location.reload();
+      })
+      .catch((error: AxiosError<IErrorResponse>) => {
+        if (error.response) {
+          console.log(error.response.data.message);
+        }
+      });
+  };
 
   useEffect(() => {
     api
@@ -137,7 +236,7 @@ function Reminders() {
           console.log(error.response.data.message);
         }
       });
-  }, []);
+  }, [scheduleUUID]);
   return (
     <Container>
       <Header>
@@ -158,7 +257,7 @@ function Reminders() {
                   <OutlinedInput
                     label="Cor"
                     {...register("color")}
-                    defaultValue="#ffffff"
+                    placeholder="#ffffff"
                   />
                 </FormControl>
                 <FormControl>
@@ -170,7 +269,7 @@ function Reminders() {
                   <OutlinedInput
                     label="Descrição"
                     {...register("description")}
-                    defaultValue="Essa é uma descrição."
+                    placeholder="Essa é uma descrição."
                   />
                 </FormControl>
                 <FormControl>
@@ -178,7 +277,7 @@ function Reminders() {
                   <OutlinedInput
                     label="Título"
                     {...register("title")}
-                    defaultValue="Esse é o Título."
+                    placeholder="Esse é o Título."
                   />
                 </FormControl>
                 <Button variant="contained" type="submit">
@@ -232,8 +331,109 @@ function Reminders() {
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <Box sx={style}>
-          <span>{selectedItem?.uuid}</span>
+        <Box sx={styleTasks}>
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>{selectedItem?.title}</span>
+            <Button variant="outlined" onClick={deleteNote} color="error">
+              Remover Nota
+            </Button>
+          </div>
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "5rem",
+            }}
+          >
+            <IconButton
+              onClick={() => {
+                setNewTask(true);
+              }}
+              style={{
+                display: `${NewTask ? "none" : "flex"}`,
+              }}
+              color="primary"
+            >
+              <Add />
+            </IconButton>
+
+            {NewTask && (
+              <form
+                onSubmit={handleSubmit(createNewTask)}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <FormControl>
+                  <InputLabel>Item</InputLabel>
+                  <OutlinedInput
+                    label="Item"
+                    {...register("description")}
+                    placeholder="Essa é uma descrição."
+                  />
+                </FormControl>
+                <IconButton type="submit">
+                  <Done color="success" />
+                </IconButton>
+                <IconButton
+                  onClick={() => {
+                    setNewTask(false);
+                  }}
+                >
+                  <Cancel color="error" />
+                </IconButton>
+              </form>
+            )}
+          </div>
+          {selectedItem?.taskNotes?.map((task, index) => (
+            <div
+              key={index}
+              style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span>{task.description}</span>
+              <div>
+                {task.status === "COMPLETE" ? (
+                  <Checkbox
+                    checked={true}
+                    onClick={() => {
+                      updateTask(task);
+                    }}
+                  />
+                ) : (
+                  <Checkbox
+                    checked={false}
+                    onClick={() => {
+                      updateTask(task);
+                    }}
+                  />
+                )}
+                <IconButton
+                  onClick={() => {
+                    deleteTask(task.uuid);
+                  }}
+                >
+                  <Delete color="error" />
+                </IconButton>
+              </div>
+            </div>
+          ))}
         </Box>
       </Modal>
     </Container>
