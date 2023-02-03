@@ -1,6 +1,6 @@
 import styled from "styled-components";
 
-export const Container = styled.main`
+export const Container = styled.div`
   width: 100vw;
   height: 100vh;
 
@@ -9,7 +9,7 @@ export const Container = styled.main`
   align-items: flex-start;
 `;
 
-export const View = styled.main`
+export const View = styled.div`
   width: 100%;
   height: 100%;
 

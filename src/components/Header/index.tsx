@@ -1,11 +1,25 @@
-import { IconButton, Menu, MenuItem } from "@mui/material";
+import {
+  Button,
+  ButtonProps,
+  IconButton,
+  Menu,
+  MenuItem,
+  styled,
+} from "@mui/material";
 import { Container } from "./styles";
 import { AccountCircle, NotificationsNone, Search } from "@mui/icons-material";
 import { useState } from "react";
 import { useAuth } from "../../context/userContext";
 
+const ProfileButton = styled(Button)<ButtonProps>({
+  color: "gray",
+  "&:hover": {
+    backgroundColor: "#f0f0f0",
+  },
+});
+
 export function Header() {
-  const { UserSignOut } = useAuth();
+  const { user, UserSignOut } = useAuth();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -34,15 +48,16 @@ export function Header() {
           <NotificationsNone />
         </IconButton>
         <div>
-          <IconButton
-            id="basic-button"
+          <ProfileButton
+            id="basic-ProfileButton"
             aria-controls={open ? "basic-menu" : undefined}
             aria-haspopup="true"
             aria-expanded={open ? "true" : undefined}
             onClick={handleClick}
+            startIcon={<AccountCircle />}
           >
-            <AccountCircle />
-          </IconButton>
+            {user?.nickName}
+          </ProfileButton>
           <Menu
             id="basic-menu"
             anchorEl={anchorEl}
@@ -50,6 +65,14 @@ export function Header() {
             onClose={handleClose}
             MenuListProps={{
               "aria-labelledby": "basic-button",
+            }}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
             }}
           >
             <MenuItem onClick={handleClose}>Perfil</MenuItem>

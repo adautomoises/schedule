@@ -11,6 +11,6 @@ export const Container = styled.div`
 
   div {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
   }
 `;

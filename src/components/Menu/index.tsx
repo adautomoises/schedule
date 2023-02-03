@@ -58,7 +58,7 @@ export function Menu() {
           }}
         />
       </Logo>
-      {isAuth ? (
+      {/* {isAuth ? (
         <UserInfo>
           <AccountCircle />
           <span>{user?.nickName}</span>
@@ -69,13 +69,12 @@ export function Menu() {
           <span>Olá, bem-vindo!</span>
           <AutoAwesome />
         </UserInfo>
-      )}
-
+      )} */}
       {isAuth ? (
         <Actions>
           <NavButton>
             <Today />
-            <span>Agenda</span>
+            <span>Calendário</span>
           </NavButton>
           <NavButton
             onClick={() => {
