@@ -288,7 +288,7 @@ export function Contacts() {
           </Alert>
         </Collapse>
         <Header>
-          {checkedAll && includesArray.length > 0 ? (
+          {checkedAll || includesArray.length > 0 ? (
             <>
               <div>
                 {includesArray.length > 1 ? (

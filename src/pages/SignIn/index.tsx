@@ -22,12 +22,18 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { Book, ArrowBack } from "@mui/icons-material";
 
 interface IformInputs {
-  email: string;
+  emailOrNickName: string;
   password: string;
 }
 
+const emailSchema = yup.string().email().required();
+const usernameSchema = yup
+  .string()
+  .matches(/^[a-zA-Z0-9._]{3,}$/, "Username is invalid")
+  .required();
+
 const schema = yup.object().shape({
-  email: yup.string().email().required("Esse campo é obrigatório!"),
+  loginSchema: yup.mixed().oneOf([emailSchema, usernameSchema]),
   password: yup.string().required("Esse campo é obrigatório!"),
 });
 
@@ -69,8 +75,9 @@ export function SignIn() {
 
   const onSubmit = (data: IformInputs) => {
     let request = {
-      email: data.email,
+      emailOrNickName: data.emailOrNickName,
       password: data.password,
+      type: "EMAIL",
     };
 
     api
@@ -106,13 +113,13 @@ export function SignIn() {
 
       <FormContainer onSubmit={handleSubmit(onSubmit)}>
         <Form>
-          <InputLabel>E-mail</InputLabel>
+          <InputLabel>E-mail ou Usuário</InputLabel>
           <OutlinedInput
-            label="E-mail"
-            {...register("email")}
+            label="E-mail ou Usuário"
+            {...register("emailOrNickName")}
             defaultValue="adautomaleandro@gmail.com"
           />
-          {<FormHelperText>{errors?.email?.message}</FormHelperText>}
+          {<FormHelperText>{errors?.emailOrNickName?.message}</FormHelperText>}
         </Form>
         <Form>
           <InputLabel>Senha</InputLabel>
