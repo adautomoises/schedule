@@ -46,7 +46,7 @@ export function Menu() {
       })
       .catch((error: Error) => console.log(error));
   }, [setUser]);
-  
+
   return (
     <Container>
       <Logo>
@@ -89,7 +89,11 @@ export function Menu() {
             <Festival />
             <span>Eventos</span>
           </NavButton>
-          <NavButton>
+          <NavButton
+            onClick={() => {
+              navigate("/notas");
+            }}
+          >
             <EventNote />
             <span>Notas</span>
           </NavButton>
