@@ -33,7 +33,7 @@ interface IformInputs {
   fullName: string;
   nickName: string;
   genre: "Masculino" | "Feminino" | "NaoBinary";
-  birthDate: string;
+  birthDate: dayjs.Dayjs | null | undefined;
   email: string;
   password: string;
 }
@@ -47,7 +47,12 @@ const schema = yup.object().shape({
     .required("Esse campo é obrigatório!"),
   fullName: yup.string().required("Esse campo é obrigatório!"),
   nickName: yup.string().required("Esse campo é obrigatório!"),
-  birthDate: yup.string(),
+  birthDate: yup
+    .date()
+    .required("Data de aniversário é obrigatório!")
+    .nullable()
+    .default(undefined)
+    .typeError("Data de aniversário inválida!"),
   genre: yup.string().required("Esse campo é obrigatório!"),
 });
 
@@ -76,12 +81,15 @@ export function SignUp() {
   const navigate = useNavigate();
 
   const [genre, setGenre] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [valueDatePicker, setValueDatePicker] = useState<
+    dayjs.Dayjs | null | undefined
+  >(null);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<IformInputs>({
     resolver: yupResolver(schema),
@@ -94,12 +102,8 @@ export function SignUp() {
   const handleClickShowPassword = () => setShowPassword((show) => !show);
 
   const onSubmit = (data: IformInputs) => {
-    const date = dayjs(selectedDate).format("YYYY-MM-DD");
-    const newDate = dayjs(new Date()).format("YYYY-MM-DD");
-    const birthDate = selectedDate ? date : newDate;
-
     let request = {
-      birthDate: birthDate,
+      birthDate: dayjs(data.birthDate).format("YYYY-MM-DD"),
       email: data.email,
       fullName: data.fullName,
       genre: data.genre,
@@ -170,12 +174,13 @@ export function SignUp() {
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="Data de Nascimento"
-              inputFormat="YYYY-MM-DD"
-              value={selectedDate}
-              onChange={(newValue: any) => {
-                setSelectedDate(newValue);
+              value={valueDatePicker}
+              inputFormat="DD-MM-YYYY"
+              onChange={(newValue) => {
+                setValueDatePicker(newValue);
+                setValue("birthDate", newValue);
               }}
-              renderInput={(params: any) => <TextField {...params} />}
+              renderInput={(params) => <TextField {...params} />}
             />
           </LocalizationProvider>
           {<FormHelperText>{errors?.birthDate?.message}</FormHelperText>}
