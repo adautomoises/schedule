@@ -5,18 +5,16 @@ import api from "../../services/api";
 import { useAuth } from "../../context/userContext";
 
 import {
-  AccountCircle,
   Book,
   Today,
   Login,
   AppRegistration,
-  AutoAwesome,
   PermContactCalendar,
   EventNote,
   Festival,
 } from "@mui/icons-material";
 import { IconButton, IconButtonProps, styled } from "@mui/material";
-import { Container, Logo, UserInfo, Actions } from "./styles";
+import { Container, Logo, Actions } from "./styles";
 
 const NavButton = styled(IconButton)<IconButtonProps>({
   borderRadius: 10,
@@ -31,7 +29,7 @@ const NavButton = styled(IconButton)<IconButtonProps>({
 export function Menu() {
   const navigate = useNavigate();
   const [isAuth, setIsAuth] = useState(false);
-  const { user, setUser } = useAuth();
+  const { setUser } = useAuth();
 
   useEffect(() => {
     api
@@ -58,18 +56,6 @@ export function Menu() {
           }}
         />
       </Logo>
-      {/* {isAuth ? (
-        <UserInfo>
-          <AccountCircle />
-          <span>{user?.nickName}</span>
-        </UserInfo>
-      ) : (
-        <UserInfo>
-          <AutoAwesome />
-          <span>Olá, bem-vindo!</span>
-          <AutoAwesome />
-        </UserInfo>
-      )} */}
       {isAuth ? (
         <Actions>
           <NavButton>
