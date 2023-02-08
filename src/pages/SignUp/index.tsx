@@ -33,7 +33,7 @@ interface IformInputs {
   fullName: string;
   nickName: string;
   genre: "Masculino" | "Feminino" | "NaoBinary";
-  birthDate: dayjs.Dayjs | null | undefined;
+  birthDate: dayjs.Dayjs | null;
   email: string;
   password: string;
 }
@@ -51,7 +51,6 @@ const schema = yup.object().shape({
     .date()
     .required("Data de aniversário é obrigatório!")
     .nullable()
-    .default(undefined)
     .typeError("Data de aniversário inválida!"),
   genre: yup.string().required("Esse campo é obrigatório!"),
 });
@@ -82,9 +81,9 @@ export function SignUp() {
 
   const [genre, setGenre] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [valueDatePicker, setValueDatePicker] = useState<
-    dayjs.Dayjs | null | undefined
-  >(null);
+  const [valueDatePicker, setValueDatePicker] = useState<dayjs.Dayjs | null>(
+    null
+  );
 
   const {
     register,
