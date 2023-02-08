@@ -17,6 +17,7 @@ import {
   Radio,
   FormHelperText,
   TextField,
+  Alert,
 } from "@mui/material";
 
 import { AxiosError } from "axios";
@@ -85,12 +86,22 @@ interface IFormInputs {
   description: string;
   title: string;
   status: string;
-  datePicker: dayjs.Dayjs | null | undefined;
-  timePicker: dayjs.Dayjs | null | undefined;
+  datePicker: dayjs.Dayjs | null;
+  timePicker: dayjs.Dayjs | null;
+}
+
+enum NotesColors {
+  RED = "#f9361b",
+  ORANGE = "#f87c1c",
+  YELLOW = "#fac91c",
+  CYAN = "#5ccdb8",
+  BLUE = "#2caef6",
+  PURPLE = "#6462fc",
 }
 
 interface UserNotes {
-  color: "#f9361b" | "#f87c1c" | "#fac91c" | "#5ccdb8" | "#2caef6" | "#6462fc";
+  // color: "#f9361b" | "#f87c1c" | "#fac91c" | "#5ccdb8" | "#2caef6" | "#6462fc";
+  color: "RED" | "ORANGE" | "YELLOW" | "CYAN" | "BLUE" | "PURPLE";
   date: Date;
   description: string;
   taskNotes: {
@@ -98,7 +109,7 @@ interface UserNotes {
     status: string;
     uuid: string;
   }[];
-  time: dayjs.Dayjs | null | undefined;
+  time: dayjs.Dayjs | null;
   title: string;
   uuid: string;
 }
@@ -115,16 +126,8 @@ const schema = yup.object().shape({
     .max(40, "Máximo de 40 caracteres")
     .required("Título Obrigatório*"),
   description: yup.string().max(200, "Máximo de 200 caracteres"),
-  datePicker: yup
-    .date()
-    .nullable()
-    .default(undefined)
-    .typeError("Data de aniversário inválida!"),
-  timePicker: yup
-    .date()
-    .nullable()
-    .default(undefined)
-    .typeError("Horário inválido!"),
+  datePicker: yup.date().nullable().typeError("Data inválida!"),
+  timePicker: yup.date().nullable().typeError("Horário inválido!"),
 });
 
 function Reminders() {
@@ -151,11 +154,14 @@ function Reminders() {
     setValueTimePicker(null);
     setTitle("");
     setDescription("");
-    setSelectedColor("#f9361b");
+    setSelectedColor("RED");
     reset();
   };
 
   const [NewTask, setNewTask] = useState<boolean>(false);
+
+  const [alertNote, setAlertNote] = useState("");
+  const [alertTask, setAlertTask] = useState("");
 
   const [selectedItem, setSelectedItem] = useState<UserNotes>();
   const [openModalViewNote, setOpenModalViewNote] = useState(false);
@@ -172,10 +178,12 @@ function Reminders() {
   const createNewNote = (data: IFormInputs) => {
     let request = {
       color: selectedColor,
-      date: dayjs(data.datePicker).format("YYYY-MM-DD"),
+      date: data.datePicker
+        ? dayjs(data.datePicker).format("YYYY-MM-DD")
+        : null,
       description: data.description,
       title: data.title,
-      time: dayjs(data.timePicker).format("HH:mm"),
+      time: data.timePicker ? dayjs(data.timePicker).format("HH:mm") : null,
     };
 
     api
@@ -185,8 +193,12 @@ function Reminders() {
         },
       })
       .then((response) => {
-        setUserNotes((userNotes) => [userNotes, response.data]);
+        handleUpdateNotes(response.data);
         handleCloseModalNewNote();
+        setAlertNote("Nota criada com sucesso!");
+        setTimeout(() => {
+          setAlertNote("");
+        }, 3000);
       })
       .catch((error: AxiosError<IErrorResponse>) => {
         if (error.response) {
@@ -213,6 +225,10 @@ function Reminders() {
       });
   };
 
+  const handleUpdateNotes = (Note: UserNotes) => {
+    userNotes?.push(Note);
+  };
+
   const createNewTask = (data: IFormInputs) => {
     let request = {
       description: data.description,
@@ -226,9 +242,12 @@ function Reminders() {
         },
       })
       .then((response) => {
-        setValue("title", "");
         handleUpdateTaskNotes(response.data);
-        console.log(response.data);
+        reset();
+        setAlertTask("Tarefa criada com sucesso!");
+        setTimeout(() => {
+          setAlertTask("");
+        }, 3000);
       })
       .catch((error: AxiosError<IErrorResponse>) => {
         if (error.response) {
@@ -245,7 +264,10 @@ function Reminders() {
         },
       })
       .then((response) => {
-        console.log(response.data);
+        setAlertTask(response.data.message);
+        setTimeout(() => {
+          setAlertTask("");
+        }, 3000);
       })
       .catch((error: AxiosError<IErrorResponse>) => {
         if (error.response) {
@@ -291,7 +313,7 @@ function Reminders() {
   const handleUpdateTaskNotes = (task: TaskProps) => {
     setSelectedItem((prevState = {} as UserNotes) => ({
       ...prevState,
-      taskNotes: [...(prevState.taskNotes || []), task],
+      taskNotes: [...prevState.taskNotes, task],
     }));
   };
 
@@ -299,7 +321,7 @@ function Reminders() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedColor, setSelectedColor] = useState("#f9361b");
+  const [selectedColor, setSelectedColor] = useState("RED");
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedColor(event.target.value);
@@ -330,20 +352,50 @@ function Reminders() {
       });
   }, [scheduleUUID]);
 
-  const [valueDatePicker, setValueDatePicker] = useState<
-    dayjs.Dayjs | null | undefined
-  >(null);
-  const [valueTimePicker, setValueTimePicker] = useState<
-    dayjs.Dayjs | null | undefined
-  >(null);
+  const [valueDatePicker, setValueDatePicker] = useState<dayjs.Dayjs | null>(
+    null
+  );
+  const [valueTimePicker, setValueTimePicker] = useState<dayjs.Dayjs | null>(
+    null
+  );
+
+  const noteColor = (Color: string) => {
+    switch (Color) {
+      case "BLUE":
+        return NotesColors.BLUE;
+      case "CYAN":
+        return NotesColors.CYAN;
+      case "ORANGE":
+        return NotesColors.ORANGE;
+      case "PURPLE":
+        return NotesColors.PURPLE;
+      case "RED":
+        return NotesColors.RED;
+      case "YELLOW":
+        return NotesColors.YELLOW;
+    }
+  };
 
   return (
     <Container>
       <Header>
-        <div>
+        <div
+          style={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "space-around",
+            alignItems: "center",
+            flexDirection: "column",
+          }}
+        >
           <IconButton onClick={handleOpenModalNewNote}>
             <Add />
           </IconButton>
+          {alertNote !== "" && (
+            <Alert severity="success">
+              <div>{alertNote}</div>
+            </Alert>
+          )}
           <Modal
             open={openModalNewNote}
             onClose={handleCloseModalNewNote}
@@ -413,56 +465,56 @@ function Reminders() {
                   <h2>Cor</h2>
                   <div>
                     <Radio
-                      {...controlProps("#f9361b")}
+                      {...controlProps("RED")}
                       sx={{
-                        color: "#f9361b",
+                        color: NotesColors.RED,
                         "&.Mui-checked": {
-                          color: "#f9361b",
+                          color: NotesColors.RED,
                         },
                       }}
                     />
                     <Radio
-                      {...controlProps("#f87c1c")}
+                      {...controlProps("ORANGE")}
                       sx={{
-                        color: "#f87c1c",
+                        color: NotesColors.ORANGE,
                         "&.Mui-checked": {
-                          color: "#f87c1c",
+                          color: NotesColors.ORANGE,
                         },
                       }}
                     />
                     <Radio
-                      {...controlProps("#fac91c")}
+                      {...controlProps("YELLOW")}
                       sx={{
-                        color: "#fac91c",
+                        color: NotesColors.YELLOW,
                         "&.Mui-checked": {
-                          color: "#fac91c",
+                          color: NotesColors.YELLOW,
                         },
                       }}
                     />
                     <Radio
-                      {...controlProps("#5ccdb8")}
+                      {...controlProps("CYAN")}
                       sx={{
-                        color: "#5ccdb8",
+                        color: NotesColors.CYAN,
                         "&.Mui-checked": {
-                          color: "#5ccdb8",
+                          color: NotesColors.CYAN,
                         },
                       }}
                     />
                     <Radio
-                      {...controlProps("#2caef6")}
+                      {...controlProps("BLUE")}
                       sx={{
-                        color: "#2caef6",
+                        color: NotesColors.BLUE,
                         "&.Mui-checked": {
-                          color: "#2caef6",
+                          color: NotesColors.BLUE,
                         },
                       }}
                     />
                     <Radio
-                      {...controlProps("#6462fc")}
+                      {...controlProps("PURPLE")}
                       sx={{
-                        color: "#6462fc",
+                        color: NotesColors.PURPLE,
                         "&.Mui-checked": {
-                          color: "#6462fc",
+                          color: NotesColors.PURPLE,
                         },
                       }}
                     />
@@ -481,6 +533,7 @@ function Reminders() {
                       renderInput={(params) => <TextField {...params} />}
                     />
                   </LocalizationProvider>
+                  <FormHelperText>{errors.datePicker?.message}</FormHelperText>
                 </FormControl>
                 <FormControl>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -517,27 +570,42 @@ function Reminders() {
             sx={{
               minWidth: 275,
               maxWidth: "auto",
-              backgroundColor: `${item.color}`,
+              backgroundColor: `${noteColor(item.color)}`,
               color: "white",
             }}
           >
             <CardContent>
-              <Typography sx={{ fontSize: 14 }} color="white" gutterBottom>
-                {dayjs(item.date).format("DD/MM/YYYY")}
-              </Typography>
-              <Typography variant="h5" component="div" sx={styleNote}>
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography sx={{ fontSize: 14 }} color="white" gutterBottom>
+                  {item.date !== null && dayjs(item.date).format("DD/MM/YYYY")}
+                </Typography>
+                <Typography sx={{ fontSize: 14 }} color="white" gutterBottom>
+                  {item.time !== null && <>{item.time}</>}
+                </Typography>
+                {item.taskNotes?.length > 0 && (
+                  <Typography sx={{ fontSize: 14 }} color="white" gutterBottom>
+                    Lista{" "}
+                    {
+                      item.taskNotes.filter(
+                        (task) => task.status === "COMPLETE"
+                      ).length
+                    }{" "}
+                    / {item.taskNotes.length}
+                  </Typography>
+                )}
+              </div>
+
+              <Typography variant="h6" component="div" sx={styleNote}>
                 {item.title}
               </Typography>
-              {item.taskNotes && item.taskNotes[index] && (
-                <Typography sx={{ mb: 1.5 }} color="white">
-                  Itens{" "}
-                  {
-                    item.taskNotes.filter((task) => task.status === "COMPLETE")
-                      .length
-                  }{" "}
-                  / {item.taskNotes.length}
-                </Typography>
-              )}
+
               <Typography variant="body2" sx={styleNote}>
                 {item.description}
               </Typography>
@@ -561,6 +629,11 @@ function Reminders() {
         aria-describedby="modal-modal-description"
       >
         <Box sx={styleTasks}>
+          {alertTask !== "" && (
+            <Alert severity="success">
+              <div>{alertTask}</div>
+            </Alert>
+          )}
           <div
             style={{
               width: "100%",
@@ -633,35 +706,45 @@ function Reminders() {
               </form>
             )}
           </div>
-          {selectedItem?.taskNotes?.map((task, index) => (
-            <div
-              key={index}
-              style={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <span>{task.description}</span>
-              <div>
-                <Checkbox
-                  checked={task.status === "COMPLETE"}
-                  onClick={() => {
-                    setIsChange(true);
-                    handleChangeTaskStatus(task);
-                  }}
-                />
-                <IconButton
-                  onClick={() => {
-                    deleteTask(task.uuid);
-                  }}
-                >
-                  <Delete color="error" />
-                </IconButton>
+          <div
+            style={{
+              width: "100%",
+              maxHeight: "500px",
+              display: "flex",
+              flexDirection: "column",
+              overflowY: "scroll",
+            }}
+          >
+            {selectedItem?.taskNotes?.map((task, index) => (
+              <div
+                key={index}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span>{task.description}</span>
+                <div>
+                  <Checkbox
+                    checked={task.status === "COMPLETE"}
+                    onClick={() => {
+                      setIsChange(true);
+                      handleChangeTaskStatus(task);
+                    }}
+                  />
+                  <IconButton
+                    onClick={() => {
+                      deleteTask(task.uuid);
+                    }}
+                  >
+                    <Delete color="error" />
+                  </IconButton>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </Box>
       </Modal>
     </Container>
