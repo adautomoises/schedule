@@ -11,7 +11,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 // Styles
 import { Container, Header, FormContainer } from "./styles";
-import { styled, FormControlProps } from "@mui/material";
+import { styled, FormControlProps, Snackbar, Alert } from "@mui/material";
 import {
   Button,
   FormControl,
@@ -28,6 +28,11 @@ import {
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { Book, ArrowBack } from "@mui/icons-material";
+import { AxiosError } from "axios";
+
+interface IErrorResponse {
+  message: string;
+}
 
 interface IformInputs {
   fullName: string;
@@ -39,7 +44,10 @@ interface IformInputs {
 }
 
 const schema = yup.object().shape({
-  email: yup.string().email().required("Esse campo é obrigatório!"),
+  email: yup
+    .string()
+    .email("Digite um e-mail válido!")
+    .required("Esse campo é obrigatório!"),
   password: yup
     .string()
     .min(6, "Mínimo de 6 caracteres")
@@ -84,6 +92,8 @@ export function SignUp() {
   const [valueDatePicker, setValueDatePicker] = useState<dayjs.Dayjs | null>(
     null
   );
+  const [alertError, setAlertError] = useState("");
+  const [alertSuccess, setAlertSuccess] = useState("");
 
   const {
     register,
@@ -101,6 +111,8 @@ export function SignUp() {
   const handleClickShowPassword = () => setShowPassword((show) => !show);
 
   const onSubmit = (data: IformInputs) => {
+    setAlertError("");
+
     let request = {
       birthDate: dayjs(data.birthDate).format("YYYY-MM-DD"),
       email: data.email,
@@ -112,11 +124,18 @@ export function SignUp() {
 
     api
       .post("/users", request)
-      .then((response) => {
-        console.log(response.data);
-        navigate("/entrar");
+      .then(() => {
+        setAlertSuccess("Usuário criado com sucesso!");
+        setTimeout(() => {
+          setAlertSuccess("");
+          navigate("/entrar");
+        }, 3000);
       })
-      .catch((error) => console.log(error));
+      .catch((error: AxiosError<IErrorResponse>) => {
+        if (error.response) {
+          setAlertError(error.response.data.message);
+        }
+      });
   };
 
   return (
@@ -139,20 +158,12 @@ export function SignUp() {
       <FormContainer onSubmit={handleSubmit(onSubmit)}>
         <Form>
           <InputLabel>Nome Completo</InputLabel>
-          <OutlinedInput
-            label="Nome Completo"
-            {...register("fullName")}
-            defaultValue="Adauto Moisés"
-          />
+          <OutlinedInput label="Nome Completo" {...register("fullName")} />
           {<FormHelperText>{errors?.fullName?.message}</FormHelperText>}
         </Form>
         <Form>
           <InputLabel>Nome de Usuário</InputLabel>
-          <OutlinedInput
-            label="Nome de Usuário"
-            {...register("nickName")}
-            defaultValue="moandleandro"
-          />
+          <OutlinedInput label="Nome de Usuário" {...register("nickName")} />
           {<FormHelperText>{errors?.nickName?.message}</FormHelperText>}
         </Form>
         <Form>
@@ -186,11 +197,7 @@ export function SignUp() {
         </Form>
         <Form>
           <InputLabel>E-mail</InputLabel>
-          <OutlinedInput
-            label="E-mail"
-            {...register("email")}
-            defaultValue="adautomaleandro@gmail.com"
-          />
+          <OutlinedInput label="E-mail" {...register("email")} />
           {<FormHelperText>{errors?.email?.message}</FormHelperText>}
         </Form>
         <Form>
@@ -198,7 +205,6 @@ export function SignUp() {
           <OutlinedInput
             label="Senha"
             type={showPassword ? "text" : "password"}
-            defaultValue="12345678"
             {...register("password", { required: true, minLength: 6 })}
             endAdornment={
               <InputAdornment position="end">
@@ -210,6 +216,16 @@ export function SignUp() {
           />
           {<FormHelperText>{errors?.password?.message}</FormHelperText>}
         </Form>
+        {alertError !== "" && (
+          <Alert severity="error">
+            <div>{alertError}</div>
+          </Alert>
+        )}
+        {alertSuccess !== "" && (
+          <Alert severity="success">
+            <div>{alertSuccess}</div>
+          </Alert>
+        )}
         <SubmitButton variant="outlined" color="primary" type="submit">
           Cadastrar
         </SubmitButton>

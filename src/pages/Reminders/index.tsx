@@ -61,8 +61,8 @@ const styleTasks = {
   transform: "translate(-50%, -50%)",
   width: 400,
   bgcolor: "background.paper",
-  border: "2px solid #000",
   boxShadow: 24,
+  borderRadius: 1,
   p: 4,
   display: "flex",
   flexDirection: "column",
@@ -100,15 +100,10 @@ enum NotesColors {
 }
 
 interface UserNotes {
-  // color: "#f9361b" | "#f87c1c" | "#fac91c" | "#5ccdb8" | "#2caef6" | "#6462fc";
   color: "RED" | "ORANGE" | "YELLOW" | "CYAN" | "BLUE" | "PURPLE";
-  date: Date;
+  date: Date | null;
   description: string;
-  taskNotes: {
-    description: string;
-    status: string;
-    uuid: string;
-  }[];
+  taskNotes: TaskProps[];
   time: dayjs.Dayjs | null;
   title: string;
   uuid: string;
@@ -134,7 +129,7 @@ function Reminders() {
   const scheduleUUID = localStorage.getItem(
     "@schedule:user-schedule-uuid-1.0.0"
   );
-  const [userNotes, setUserNotes] = useState<UserNotes[]>();
+  const [userNotes, setUserNotes] = useState<UserNotes[]>([]);
 
   const {
     register,
@@ -163,7 +158,7 @@ function Reminders() {
   const [alertNote, setAlertNote] = useState("");
   const [alertTask, setAlertTask] = useState("");
 
-  const [selectedItem, setSelectedItem] = useState<UserNotes>();
+  const [selectedItem, setSelectedItem] = useState<UserNotes>({} as UserNotes);
   const [openModalViewNote, setOpenModalViewNote] = useState(false);
   const handleOpenModalViewNote = (item: UserNotes) => {
     setSelectedItem(item);
@@ -171,150 +166,8 @@ function Reminders() {
   };
   const handleCloseModalViewNote = () => {
     setOpenModalViewNote(false);
-    updateTask();
+    patchTasks();
     reset();
-  };
-
-  const createNewNote = (data: IFormInputs) => {
-    let request = {
-      color: selectedColor,
-      date: data.datePicker
-        ? dayjs(data.datePicker).format("YYYY-MM-DD")
-        : null,
-      description: data.description,
-      title: data.title,
-      time: data.timePicker ? dayjs(data.timePicker).format("HH:mm") : null,
-    };
-
-    api
-      .post(`/notes`, request, {
-        params: {
-          scheduleUUID: scheduleUUID,
-        },
-      })
-      .then((response) => {
-        handleUpdateNotes(response.data);
-        handleCloseModalNewNote();
-        setAlertNote("Nota criada com sucesso!");
-        setTimeout(() => {
-          setAlertNote("");
-        }, 3000);
-      })
-      .catch((error: AxiosError<IErrorResponse>) => {
-        if (error.response) {
-          console.log(error.response.data.message);
-        }
-      });
-  };
-
-  const deleteNote = () => {
-    api
-      .delete(`/notes`, {
-        params: {
-          uuid: selectedItem?.uuid,
-        },
-      })
-      .then((response) => {
-        handleCloseModalNewNote();
-        window.location.reload();
-      })
-      .catch((error: AxiosError<IErrorResponse>) => {
-        if (error.response) {
-          console.log(error.response.data.message);
-        }
-      });
-  };
-
-  const handleUpdateNotes = (Note: UserNotes) => {
-    userNotes?.push(Note);
-  };
-
-  const createNewTask = (data: IFormInputs) => {
-    let request = {
-      description: data.description,
-      status: "NOT_COMPLETE",
-    };
-
-    api
-      .post("/notes/taskNotes", request, {
-        params: {
-          noteUUID: selectedItem?.uuid,
-        },
-      })
-      .then((response) => {
-        handleUpdateTaskNotes(response.data);
-        reset();
-        setAlertTask("Tarefa criada com sucesso!");
-        setTimeout(() => {
-          setAlertTask("");
-        }, 3000);
-      })
-      .catch((error: AxiosError<IErrorResponse>) => {
-        if (error.response) {
-          console.log(error.response.data.message);
-        }
-      });
-  };
-
-  const deleteTask = (taskUUID: string) => {
-    api
-      .delete("/notes/taskNotes", {
-        params: {
-          taskUUID: taskUUID,
-        },
-      })
-      .then((response) => {
-        setAlertTask(response.data.message);
-        setTimeout(() => {
-          setAlertTask("");
-        }, 3000);
-      })
-      .catch((error: AxiosError<IErrorResponse>) => {
-        if (error.response) {
-          console.log(error.response.data.message);
-        }
-      });
-  };
-
-  const updateTask = () => {
-    if (isChange) {
-      let request: TaskProps[] = [];
-
-      selectedItem?.taskNotes?.forEach((task: TaskProps) => {
-        request.push(task);
-      });
-
-      api
-        .patch("/notes/taskNotes", request)
-        .then((response) => {
-          console.log(response.data);
-        })
-        .catch((error: AxiosError<IErrorResponse>) => {
-          if (error.response) {
-            console.log(error.response.data.message);
-          }
-        })
-        .finally(() => {
-          setIsChange(false);
-        });
-    }
-  };
-
-  const handleChangeTaskStatus = (task: TaskProps) => {
-    task.status = task.status === "COMPLETE" ? "NOT_COMPLETE" : "COMPLETE";
-    setSelectedItem((prevState = {} as UserNotes) => ({
-      ...prevState,
-      taskNotes: prevState.taskNotes.map((t) =>
-        t.uuid === task.uuid ? { ...t, status: task.status } : t
-      ),
-    }));
-  };
-
-  const handleUpdateTaskNotes = (task: TaskProps) => {
-    setSelectedItem((prevState = {} as UserNotes) => ({
-      ...prevState,
-      taskNotes: [...prevState.taskNotes, task],
-    }));
   };
 
   const [isChange, setIsChange] = useState(false);
@@ -376,6 +229,160 @@ function Reminders() {
     }
   };
 
+  const handleCreateNote = (data: IFormInputs) => {
+    let request = {
+      color: selectedColor,
+      date: data.datePicker
+        ? dayjs(data.datePicker).format("YYYY-MM-DD")
+        : null,
+      description: data.description,
+      title: data.title,
+      time: data.timePicker ? dayjs(data.timePicker).format("HH:mm") : null,
+    };
+
+    api
+      .post(`/notes`, request, {
+        params: {
+          scheduleUUID: scheduleUUID,
+        },
+      })
+      .then((response) => {
+        setUserNotes((prevState) => [...prevState, response.data]);
+        handleCloseModalNewNote();
+        setAlertNote("Nota criada com sucesso!");
+        setTimeout(() => {
+          setAlertNote("");
+        }, 3000);
+      })
+      .catch((error: AxiosError<IErrorResponse>) => {
+        if (error.response) {
+          console.log(error.response.data.message);
+        }
+      });
+  };
+
+  const handleDeleteNote = () => {
+    api
+      .delete(`/notes`, {
+        params: {
+          uuid: selectedItem.uuid,
+        },
+      })
+      .then((response) => {
+        setUserNotes((prevState) =>
+          prevState.filter((note) => note.uuid !== selectedItem.uuid)
+        );
+        handleCloseModalViewNote();
+        setAlertNote(response.data.message);
+        setTimeout(() => {
+          setAlertNote("");
+        }, 3000);
+      })
+      .catch((error: AxiosError<IErrorResponse>) => {
+        if (error.response) {
+          console.log(error.response.data.message);
+        }
+      });
+  };
+
+  const handleCreateTask = (data: IFormInputs) => {
+    let request = {
+      description: data.description,
+      status: "NOT_COMPLETE",
+    };
+
+    api
+      .post("/notes/taskNotes", request, {
+        params: {
+          noteUUID: selectedItem.uuid,
+        },
+      })
+      .then((response) => {
+        console.log(response.data);
+        const Notes = [...userNotes];
+        const Note = Notes.find((note) => note.uuid === selectedItem.uuid);
+        if (Note?.taskNotes === null) {
+          Note.taskNotes = [];
+          Note?.taskNotes.push(response.data);
+        } else {
+          Note?.taskNotes.push(response.data);
+        }
+        setUserNotes(Notes);
+        reset();
+        setAlertTask("Tarefa criada com sucesso!");
+        setTimeout(() => {
+          setAlertTask("");
+        }, 3000);
+      })
+      .catch((error: AxiosError<IErrorResponse>) => {
+        if (error.response) {
+          console.log(error.response.data.message);
+        }
+      });
+  };
+
+  const handleDeleteTask = (Task: TaskProps) => {
+    api
+      .delete("/notes/taskNotes", {
+        params: {
+          taskUUID: Task.uuid,
+        },
+      })
+      .then((response) => {
+        const Notes = [...userNotes];
+        const Note = Notes.find((note) => note.uuid === selectedItem.uuid);
+        if (Note) {
+          Note.taskNotes = Note.taskNotes.filter((task) => task !== Task);
+          setUserNotes(Notes);
+        }
+        setAlertTask(response.data.message);
+        setTimeout(() => {
+          setAlertTask("");
+        }, 3000);
+      })
+      .catch((error: AxiosError<IErrorResponse>) => {
+        if (error.response) {
+          console.log(error.response.data.message);
+        }
+      });
+  };
+
+  const handleUpdateTask = (Task: TaskProps) => {
+    const Notes = [...userNotes];
+    const Note = Notes.find((note) => note.uuid === selectedItem.uuid);
+    if (Note) {
+      const index = Note.taskNotes.indexOf(Task);
+      if (index !== -1) {
+        Note.taskNotes[index].status =
+          Note.taskNotes[index].status === "NOT_COMPLETE"
+            ? "COMPLETE"
+            : "NOT_COMPLETE";
+        setUserNotes(Notes);
+      }
+    }
+  };
+
+  const patchTasks = () => {
+    if (isChange) {
+      let request: TaskProps[] = [];
+
+      selectedItem?.taskNotes?.forEach((task: TaskProps) => {
+        request.push(task);
+      });
+
+      api
+        .patch("/notes/taskNotes", request)
+        .catch((error: AxiosError<IErrorResponse>) => {
+          if (error.response) {
+            console.log(error.response.data.message);
+          }
+        })
+        .finally(() => {
+          setIsChange(false);
+        });
+    }
+  };
+
   return (
     <Container>
       <Header>
@@ -402,7 +409,7 @@ function Reminders() {
             aria-labelledby="modal-modal-title"
             aria-describedby="modal-modal-description"
           >
-            <form onSubmit={handleSubmit(createNewNote)}>
+            <form onSubmit={handleSubmit(handleCreateNote)}>
               <Box sx={style}>
                 <FormControl>
                   <InputLabel>Título*</InputLabel>
@@ -643,7 +650,7 @@ function Reminders() {
             }}
           >
             <span>{selectedItem?.title}</span>
-            <Button variant="outlined" onClick={deleteNote} color="error">
+            <Button variant="outlined" onClick={handleDeleteNote} color="error">
               Remover Nota
             </Button>
           </div>
@@ -672,7 +679,7 @@ function Reminders() {
 
             {NewTask && (
               <form
-                onSubmit={handleSubmit(createNewTask)}
+                onSubmit={handleSubmit(handleCreateTask)}
                 style={{
                   width: "100%",
                   display: "flex",
@@ -731,12 +738,12 @@ function Reminders() {
                     checked={task.status === "COMPLETE"}
                     onClick={() => {
                       setIsChange(true);
-                      handleChangeTaskStatus(task);
+                      handleUpdateTask(task);
                     }}
                   />
                   <IconButton
                     onClick={() => {
-                      deleteTask(task.uuid);
+                      handleDeleteTask(task);
                     }}
                   >
                     <Delete color="error" />

@@ -7,7 +7,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 // Styles
 import { Container, Header, FormContainer } from "./styles";
-import { styled, FormControlProps } from "@mui/material";
+import { styled, FormControlProps, Snackbar, Alert } from "@mui/material";
 import {
   Button,
   FormControl,
@@ -20,6 +20,11 @@ import {
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { Book, ArrowBack } from "@mui/icons-material";
+import { AxiosError } from "axios";
+
+interface IErrorResponse {
+  message: string;
+}
 
 interface IformInputs {
   emailOrNickName: string;
@@ -60,8 +65,10 @@ const BackButton = styled(Button)({
 
 export function SignIn() {
   const navigate = useNavigate();
-
   const [showPassword, setShowPassword] = useState(false);
+
+  const [alertError, setAlertError] = useState("");
+  const [alertSuccess, setAlertSuccess] = useState("");
 
   const {
     register,
@@ -74,10 +81,11 @@ export function SignIn() {
   const handleClickShowPassword = () => setShowPassword((show) => !show);
 
   const onSubmit = (data: IformInputs) => {
+    setAlertError("");
+
     let request = {
       emailOrNickName: data.emailOrNickName,
       password: data.password,
-      type: "EMAIL",
     };
 
     api
@@ -88,10 +96,18 @@ export function SignIn() {
           "@schedule:user-schedule-uuid-1.0.0",
           response.data.scheduleId
         );
-        navigate("/");
-        window.location.reload();
+        setAlertSuccess("Usuário logado com sucesso!");
+        setTimeout(() => {
+          setAlertSuccess("");
+          navigate("/");
+          window.location.reload();
+        }, 3000);
       })
-      .catch((error) => console.log(error));
+      .catch((error: AxiosError<IErrorResponse>) => {
+        if (error.response) {
+          setAlertError(error.response.data.message);
+        }
+      });
   };
 
   return (
@@ -119,7 +135,7 @@ export function SignIn() {
             {...register("emailOrNickName")}
             defaultValue="adautomaleandro@gmail.com"
           />
-          {<FormHelperText>{errors?.emailOrNickName?.message}</FormHelperText>}
+          <FormHelperText>{errors?.emailOrNickName?.message}</FormHelperText>
         </Form>
         <Form>
           <InputLabel>Senha</InputLabel>
@@ -138,6 +154,16 @@ export function SignIn() {
           />
           {<FormHelperText>{errors?.password?.message}</FormHelperText>}
         </Form>
+        {alertError !== "" && (
+          <Alert severity="error">
+            <div>{alertError}</div>
+          </Alert>
+        )}
+        {alertSuccess !== "" && (
+          <Alert severity="success">
+            <div>{alertSuccess}</div>
+          </Alert>
+        )}
         <SubmitButton variant="outlined" color="primary" type="submit">
           Entrar
         </SubmitButton>

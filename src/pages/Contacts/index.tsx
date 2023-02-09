@@ -55,7 +55,7 @@ const style = {
   transform: "translate(-50%, -50%)",
   width: 400,
   bgcolor: "background.paper",
-  border: "2px solid #000",
+  borderRadius: 1,
   boxShadow: 24,
   p: 4,
   display: "flex",
@@ -288,7 +288,8 @@ export function Contacts() {
           </Alert>
         </Collapse>
         <Header>
-          {checkedAll || includesArray.length > 0 ? (
+          {includesArray.length > 0 ||
+          (checkedAll && includesArray.length > 0) ? (
             <>
               <div>
                 {includesArray.length > 1 ? (
@@ -325,18 +326,13 @@ export function Contacts() {
                     <Box sx={style}>
                       <FormControl>
                         <InputLabel>Nome</InputLabel>
-                        <OutlinedInput
-                          label="Nome"
-                          {...register("name")}
-                          defaultValue="Adauto Moisés"
-                        />
+                        <OutlinedInput label="Nome" {...register("name")} />
                       </FormControl>
                       <FormControl>
                         <InputLabel>Nome de Usuário</InputLabel>
                         <OutlinedInput
                           label="Nome de Usuário"
                           {...register("nickname")}
-                          defaultValue="moandleandro"
                         />
                       </FormControl>
                       <FormControl>
@@ -344,11 +340,10 @@ export function Contacts() {
                         <OutlinedInput
                           label="Número de Contato"
                           {...register("phoneNumber")}
-                          defaultValue="85997508822"
                         />
                       </FormControl>
                       <Button variant="contained" type="submit">
-                        Submit
+                        Criar
                       </Button>
                       <Collapse in={openAlertNewContact}>
                         <Alert

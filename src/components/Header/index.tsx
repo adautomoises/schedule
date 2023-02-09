@@ -10,6 +10,7 @@ import { Container } from "./styles";
 import { AccountCircle, NotificationsNone, Search } from "@mui/icons-material";
 import { useState } from "react";
 import { useAuth } from "../../context/userContext";
+import { useNavigate } from "react-router-dom";
 
 const ProfileButton = styled(Button)<ButtonProps>({
   color: "gray",
@@ -19,6 +20,7 @@ const ProfileButton = styled(Button)<ButtonProps>({
 });
 
 export function Header() {
+  const navigate = useNavigate();
   const { user, UserSignOut } = useAuth();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -33,6 +35,7 @@ export function Header() {
   const handleSignOut = () => {
     UserSignOut();
     setAnchorEl(null);
+    navigate("/");
     window.location.reload();
   };
 
