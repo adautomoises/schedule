@@ -12,6 +12,7 @@ import {
   PermContactCalendar,
   EventNote,
   Festival,
+  PeopleAlt,
 } from "@mui/icons-material";
 import { IconButton, IconButtonProps, styled } from "@mui/material";
 import { Container, Logo, Actions } from "./styles";
@@ -58,11 +59,20 @@ export function Menu() {
       </Logo>
       {isAuth ? (
         <Actions>
-          <NavButton>
+          <NavButton
+            style={{
+              backgroundColor:
+                window.location.pathname === "/calendario" ? "#c9c9c9" : "",
+            }}
+          >
             <Today />
             <span>Calendário</span>
           </NavButton>
           <NavButton
+            style={{
+              backgroundColor:
+                window.location.pathname === "/contatos" ? "#c9c9c9" : "",
+            }}
             onClick={() => {
               navigate("/contatos");
             }}
@@ -70,11 +80,32 @@ export function Menu() {
             <PermContactCalendar />
             <span>Contatos</span>
           </NavButton>
-          <NavButton>
+          <NavButton
+            style={{
+              backgroundColor:
+                window.location.pathname === "/eventos" ? "#c9c9c9" : "",
+            }}
+          >
             <Festival />
             <span>Eventos</span>
           </NavButton>
           <NavButton
+            style={{
+              backgroundColor:
+                window.location.pathname === "/amigos" ? "#c9c9c9" : "",
+            }}
+            onClick={() => {
+              navigate("/amigos");
+            }}
+          >
+            <PeopleAlt />
+            <span>Amigos</span>
+          </NavButton>
+          <NavButton
+            style={{
+              backgroundColor:
+                window.location.pathname === "/notas" ? "#c9c9c9" : "",
+            }}
             onClick={() => {
               navigate("/notas");
             }}

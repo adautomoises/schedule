@@ -125,7 +125,7 @@ const schema = yup.object().shape({
   timePicker: yup.date().nullable().typeError("Horário inválido!"),
 });
 
-function Reminders() {
+export function Reminders() {
   const scheduleUUID = localStorage.getItem(
     "@schedule:user-schedule-uuid-1.0.0"
   );
@@ -757,5 +757,3 @@ function Reminders() {
     </Container>
   );
 }
-
-export default Reminders;
