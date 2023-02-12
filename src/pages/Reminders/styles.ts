@@ -9,7 +9,7 @@ export const Container = styled.div`
   align-items: flex-start;
   flex-direction: column;
 
-  gap: 2rem;
+  gap: 1rem;
   padding: 0 2rem 2rem 2rem;
   overflow-x: hidden;
 `;

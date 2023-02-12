@@ -1,185 +1,66 @@
-import React from "react";
-
-import {
-  Card,
-  Box,
-  CardActions,
-  CardContent,
-  Button,
-  Typography,
-  OutlinedInput,
-  IconButton,
-  Modal,
-  FormControl,
-  InputLabel,
-  Checkbox,
-  InputAdornment,
-  Radio,
-  FormHelperText,
-  TextField,
-  Alert,
-} from "@mui/material";
-
+import React, { useEffect, useState } from "react";
 import { AxiosError } from "axios";
-
-import { useEffect, useState } from "react";
-import api from "../../services/api";
-
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-
-import { Container, Header, Cards } from "./styles";
-import { Add, Cancel, Delete, Done } from "@mui/icons-material";
-
+//Api
+import api from "../../services/api";
+//Date & Time
 import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import {
-  DatePicker,
-  LocalizationProvider,
-  TimePicker,
-} from "@mui/x-date-pickers";
+import { DatePicker, LocalizationProvider, TimePicker } from "@mui/x-date-pickers";
+//utils
+import { UserNotes, IFormInputs, IErrorResponse, TaskProps } from "../../interfaces/RemindersInterface";
+import { NotesColors } from "../../enum/RemindersEnum";
+//Styles
+import "./styles.css"
+import { Container, Header, Cards } from "./styles";
+import { Add, Cancel, Delete, Done, Edit } from "@mui/icons-material";
+import { Card, Box, CardActions, CardContent, Button, Typography, OutlinedInput, IconButton, Modal, FormControl, InputLabel, Checkbox, InputAdornment, Radio, FormHelperText, TextField, Alert } from "@mui/material";
 
-const style = {
-  position: "absolute" as "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: 400,
-  bgcolor: "background.paper",
-  borderRadius: 1,
-  boxShadow: 24,
-  p: 4,
-  display: "flex",
-  flexDirection: "column",
-  gap: 1,
-};
-const styleTasks = {
-  position: "absolute" as "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: 400,
-  bgcolor: "background.paper",
-  boxShadow: 24,
-  borderRadius: 1,
-  p: 4,
-  display: "flex",
-  flexDirection: "column",
-  gap: 1,
-  justifyContent: "center",
-  alignItems: "center",
-};
-const styleNote = {
-  width: "100%",
-  overflowWrap: "break-word",
-  wordWrap: "break-word",
-  wordBreak: "break-word",
-};
-
-interface IErrorResponse {
-  message: string;
-}
-
-interface IFormInputs {
-  color: string;
-  description: string;
-  title: string;
-  status: string;
-  datePicker: dayjs.Dayjs | null;
-  timePicker: dayjs.Dayjs | null;
-}
-
-enum NotesColors {
-  RED = "#f9361b",
-  ORANGE = "#f87c1c",
-  YELLOW = "#fac91c",
-  CYAN = "#5ccdb8",
-  BLUE = "#2caef6",
-  PURPLE = "#6462fc",
-}
-
-interface UserNotes {
-  color: "RED" | "ORANGE" | "YELLOW" | "CYAN" | "BLUE" | "PURPLE";
-  date: Date | null;
-  description: string;
-  taskNotes: TaskProps[];
-  time: dayjs.Dayjs | null;
-  title: string;
-  uuid: string;
-}
-
-interface TaskProps {
-  description: string;
-  status: string;
-  uuid: string;
-}
-
-const schema = yup.object().shape({
-  title: yup
-    .string()
-    .max(40, "Máximo de 40 caracteres")
-    .required("Título Obrigatório*"),
-  description: yup.string().max(200, "Máximo de 200 caracteres"),
-  datePicker: yup.date().nullable().typeError("Data inválida!"),
-  timePicker: yup.date().nullable().typeError("Horário inválido!"),
-});
+const schema = yup.object().shape({ title: yup.string().max(40, "Máximo de 40 caracteres").required("Título Obrigatório*"), descriptionNotes: yup.string().max(200, "Máximo de 200 caracteres"), descriptionTasks: yup.string().max(50, "Máximo de 50 caracteres").required("Esse campo é obrigatório!"), datePicker: yup.date().nullable().typeError("Data inválida!"), timePicker: yup.date().nullable().typeError("Horário inválido!"), });
 
 export function Reminders() {
-  const scheduleUUID = localStorage.getItem(
-    "@schedule:user-schedule-uuid-1.0.0"
-  );
+  const scheduleUUID = localStorage.getItem("@schedule:user-schedule-uuid-1.0.0");
   const [userNotes, setUserNotes] = useState<UserNotes[]>([]);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    formState: { errors },
-  } = useForm<IFormInputs>({
-    resolver: yupResolver(schema),
-  });
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<IFormInputs>({ resolver: yupResolver(schema), });
 
   const [openModalNewNote, setOpenModalNewNote] = useState(false);
   const handleOpenModalNewNote = () => setOpenModalNewNote(true);
-  const handleCloseModalNewNote = () => {
-    setOpenModalNewNote(false);
-    setValueDatePicker(null);
-    setValueTimePicker(null);
-    setTitle("");
-    setDescription("");
-    setSelectedColor("RED");
-    reset();
-  };
+  const handleCloseModalNewNote = () => { setOpenModalNewNote(false); setValueDatePicker(null); setValueTimePicker(null); setTitle(""); setDescriptionNotes(""); setSelectedColor("RED"); reset(); };
 
   const [NewTask, setNewTask] = useState<boolean>(false);
 
-  const [alertNote, setAlertNote] = useState("");
-  const [alertTask, setAlertTask] = useState("");
+  const [alertSuccessNote, setAlertSuccessNote] = useState("");
+  const [alertErrorNote, setAlertErrorNote] = useState("");
+  const [alertSuccessTask, setAlertSuccessTask] = useState("");
+  const [alertErrorTask, setAlertErrorTask] = useState("");
 
   const [selectedItem, setSelectedItem] = useState<UserNotes>({} as UserNotes);
   const [openModalViewNote, setOpenModalViewNote] = useState(false);
-  const handleOpenModalViewNote = (item: UserNotes) => {
-    setSelectedItem(item);
-    setOpenModalViewNote(true);
-  };
-  const handleCloseModalViewNote = () => {
-    setOpenModalViewNote(false);
-    patchTasks();
-    reset();
-  };
-
+  const handleOpenModalViewNote = (item: UserNotes) => { setSelectedItem(item); setOpenModalViewNote(true); }; const handleCloseModalViewNote = () => { setOpenModalViewNote(false); setNewTask(false); patchTasks(); reset(); setEditNote(false); };
   const [isChange, setIsChange] = useState(false);
 
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [descriptionNotes, setDescriptionNotes] = useState("");
+  const [descriptionTasks, setDescriptionTasks] = useState("");
   const [selectedColor, setSelectedColor] = useState("RED");
+
+  const noteColor = (Color: string) => {
+    switch (Color) {
+      case "BLUE": return NotesColors.BLUE;
+      case "CYAN": return NotesColors.CYAN;
+      case "ORANGE": return NotesColors.ORANGE;
+      case "PURPLE": return NotesColors.PURPLE;
+      case "RED": return NotesColors.RED;
+      case "YELLOW": return NotesColors.YELLOW;
+    }
+  };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedColor(event.target.value);
   };
-
   const controlProps = (item: string) => ({
     checked: selectedColor === item,
     onChange: handleChange,
@@ -188,54 +69,23 @@ export function Reminders() {
     inputProps: { "aria-label": item },
   });
 
-  useEffect(() => {
-    api
-      .get(`/notes`, {
-        params: {
-          scheduleUUID: scheduleUUID,
-        },
-      })
-      .then((response) => {
-        setUserNotes(response.data);
-      })
-      .catch((error: AxiosError<IErrorResponse>) => {
-        if (error.response) {
-          console.log(error.response.data.message);
-        }
-      });
-  }, [scheduleUUID]);
+  useEffect(() => { api.get(`/notes`, { params: { scheduleUUID: scheduleUUID, }, }).then((response) => { setUserNotes(response.data); }).catch((error: AxiosError<IErrorResponse>) => { if (error.response) { setAlertErrorNote(error.response.data.message); } }); }, [scheduleUUID]);
+  const [valueDatePicker, setValueDatePicker] = useState<dayjs.Dayjs | null>(null);
+  const [valueTimePicker, setValueTimePicker] = useState<dayjs.Dayjs | null>(null);
 
-  const [valueDatePicker, setValueDatePicker] = useState<dayjs.Dayjs | null>(
-    null
-  );
-  const [valueTimePicker, setValueTimePicker] = useState<dayjs.Dayjs | null>(
-    null
-  );
+  const [editNote, setEditNote] = useState(false);
+  const handleClickEditNote = () => { setEditNote(!editNote); setSelectedColor(selectedItem.color); setDescriptionNotes(selectedItem.description); setTitle(selectedItem.title); setValue("descriptionTasks", ""); setValue("title", selectedItem.title); setNewTask(false); patchTasks(); }
 
-  const noteColor = (Color: string) => {
-    switch (Color) {
-      case "BLUE":
-        return NotesColors.BLUE;
-      case "CYAN":
-        return NotesColors.CYAN;
-      case "ORANGE":
-        return NotesColors.ORANGE;
-      case "PURPLE":
-        return NotesColors.PURPLE;
-      case "RED":
-        return NotesColors.RED;
-      case "YELLOW":
-        return NotesColors.YELLOW;
-    }
-  };
 
   const handleCreateNote = (data: IFormInputs) => {
+    setAlertErrorNote("");
+
     let request = {
       color: selectedColor,
       date: data.datePicker
         ? dayjs(data.datePicker).format("YYYY-MM-DD")
         : null,
-      description: data.description,
+      description: data.descriptionNotes,
       title: data.title,
       time: data.timePicker ? dayjs(data.timePicker).format("HH:mm") : null,
     };
@@ -249,19 +99,20 @@ export function Reminders() {
       .then((response) => {
         setUserNotes((prevState) => [...prevState, response.data]);
         handleCloseModalNewNote();
-        setAlertNote("Nota criada com sucesso!");
+        setAlertSuccessNote("Nota criada com sucesso!");
         setTimeout(() => {
-          setAlertNote("");
+          setAlertSuccessNote("");
         }, 3000);
       })
       .catch((error: AxiosError<IErrorResponse>) => {
         if (error.response) {
-          console.log(error.response.data.message);
+          setAlertErrorNote(error.response.data.message);
         }
       });
   };
-
   const handleDeleteNote = () => {
+    setAlertErrorNote("");
+
     api
       .delete(`/notes`, {
         params: {
@@ -273,21 +124,58 @@ export function Reminders() {
           prevState.filter((note) => note.uuid !== selectedItem.uuid)
         );
         handleCloseModalViewNote();
-        setAlertNote(response.data.message);
+        setAlertSuccessNote(response.data.message);
         setTimeout(() => {
-          setAlertNote("");
+          setAlertSuccessNote("");
         }, 3000);
       })
       .catch((error: AxiosError<IErrorResponse>) => {
         if (error.response) {
-          console.log(error.response.data.message);
+          setAlertErrorNote(error.response.data.message);
         }
       });
   };
+  const handleUpdateNote = (data: IFormInputs) => {
+    setAlertErrorNote("");
+
+    let request = {
+      color: selectedColor,
+      description: data.descriptionNotes,
+      title: data.title,
+    };
+
+    api
+      .patch(`/notes`, request, {
+        params: {
+          uuid: selectedItem.uuid,
+        },
+      })
+      .then((response) => {
+        patchNotes(response.data);
+        handleCloseModalViewNote();
+        setAlertSuccessNote(response.data.title + " atualizado com sucesso!");
+        setTimeout(() => {
+          setAlertSuccessNote("");
+        }, 3000);
+      })
+      .catch((error: AxiosError<IErrorResponse>) => {
+        if (error.response) {
+          setAlertErrorNote(error.response.data.message);
+        }
+      });
+  };
+  const patchNotes = (Note: UserNotes) => {
+    const Notes = [...userNotes];
+    const filteredNotes = Notes.filter((note) => note.uuid !== selectedItem.uuid)
+    filteredNotes.push(Note);
+    setUserNotes(filteredNotes);
+  };
 
   const handleCreateTask = (data: IFormInputs) => {
+    setAlertErrorTask("");
+
     let request = {
-      description: data.description,
+      description: data.descriptionTasks,
       status: "NOT_COMPLETE",
     };
 
@@ -298,7 +186,6 @@ export function Reminders() {
         },
       })
       .then((response) => {
-        console.log(response.data);
         const Notes = [...userNotes];
         const Note = Notes.find((note) => note.uuid === selectedItem.uuid);
         if (Note?.taskNotes === null) {
@@ -308,20 +195,23 @@ export function Reminders() {
           Note?.taskNotes.push(response.data);
         }
         setUserNotes(Notes);
+        setDescriptionTasks("");
         reset();
-        setAlertTask("Tarefa criada com sucesso!");
+        setAlertSuccessTask("Tarefa criada com sucesso!");
         setTimeout(() => {
-          setAlertTask("");
+          setAlertSuccessTask("");
         }, 3000);
       })
       .catch((error: AxiosError<IErrorResponse>) => {
         if (error.response) {
-          console.log(error.response.data.message);
+          setAlertErrorTask(error.response.data.message);
         }
-      });
+      })
+      .finally(() => setNewTask(false));
   };
-
   const handleDeleteTask = (Task: TaskProps) => {
+    setAlertErrorTask("");
+
     api
       .delete("/notes/taskNotes", {
         params: {
@@ -335,18 +225,17 @@ export function Reminders() {
           Note.taskNotes = Note.taskNotes.filter((task) => task !== Task);
           setUserNotes(Notes);
         }
-        setAlertTask(response.data.message);
+        setAlertSuccessTask(response.data.message);
         setTimeout(() => {
-          setAlertTask("");
+          setAlertSuccessTask("");
         }, 3000);
       })
       .catch((error: AxiosError<IErrorResponse>) => {
         if (error.response) {
-          console.log(error.response.data.message);
+          setAlertErrorTask(error.response.data.message);
         }
       });
   };
-
   const handleUpdateTask = (Task: TaskProps) => {
     const Notes = [...userNotes];
     const Note = Notes.find((note) => note.uuid === selectedItem.uuid);
@@ -361,8 +250,9 @@ export function Reminders() {
       }
     }
   };
-
   const patchTasks = () => {
+    setAlertErrorTask("");
+
     if (isChange) {
       let request: TaskProps[] = [];
 
@@ -374,7 +264,7 @@ export function Reminders() {
         .patch("/notes/taskNotes", request)
         .catch((error: AxiosError<IErrorResponse>) => {
           if (error.response) {
-            console.log(error.response.data.message);
+            setAlertErrorTask(error.response.data.message);
           }
         })
         .finally(() => {
@@ -386,145 +276,43 @@ export function Reminders() {
   return (
     <Container>
       <Header>
-        <div
-          style={{
-            width: "100%",
-            display: "flex",
-            justifyContent: "space-around",
-            alignItems: "center",
-            flexDirection: "column",
-          }}
-        >
-          <IconButton onClick={handleOpenModalNewNote}>
-            <Add />
-          </IconButton>
-          {alertNote !== "" && (
-            <Alert severity="success">
-              <div>{alertNote}</div>
-            </Alert>
-          )}
-          <Modal
-            open={openModalNewNote}
-            onClose={handleCloseModalNewNote}
-            aria-labelledby="modal-modal-title"
-            aria-describedby="modal-modal-description"
-          >
+        <div style={{ width: "100%", display: "flex", justifyContent: "space-around", alignItems: "center", flexDirection: "column", gap: 10, }}>
+          <div style={{ width: "100%", }}>
+            {alertErrorNote !== "" && (<Alert severity="error"><div>{alertErrorNote}</div></Alert>)} {alertSuccessNote !== "" && (<Alert severity="success"><div>{alertSuccessNote}</div></Alert>)}
+          </div>
+          <Button onClick={handleOpenModalNewNote} color="primary" variant="outlined" startIcon={<Add />}>Nota</Button>
+          <Modal open={openModalNewNote} onClose={handleCloseModalNewNote} aria-labelledby="modal-modal-title" aria-describedby="modal-modal-description">
             <form onSubmit={handleSubmit(handleCreateNote)}>
-              <Box sx={style}>
+              <Box sx={boxStyle} style={{ width: "400px", display: "flex", flexDirection: "column" }}>
                 <FormControl>
                   <InputLabel>Título*</InputLabel>
                   <OutlinedInput
                     label="Título*"
                     {...register("title")}
                     placeholder="Título"
-                    endAdornment={
-                      <InputAdornment position="end">
-                        <span
-                          style={{
-                            color: `${title.length > 40 ? "red" : "gray"}`,
-                          }}
-                        >
-                          {title.length}
-                        </span>
-                        /40
-                      </InputAdornment>
-                    }
-                    onChange={(event) => {
-                      setTitle(event.target.value);
-                    }}
-                  />
+                    endAdornment={<InputAdornment position="end"><span style={{ color: `${title.length > 40 ? "red" : "gray"}`, }}>  {title.length}     </span>/40    </InputAdornment>}
+                    onChange={(event) => { setTitle(event.target.value); }} />
                   <FormHelperText>{errors.title?.message}</FormHelperText>
                 </FormControl>
                 <FormControl>
                   <InputLabel>Descrição</InputLabel>
                   <OutlinedInput
                     label="Descrição"
-                    {...register("description")}
+                    {...register("descriptionNotes")}
                     placeholder="Descrição"
-                    endAdornment={
-                      <InputAdornment position="end">
-                        <span
-                          style={{
-                            color: `${
-                              description.length > 200 ? "red" : "gray"
-                            }`,
-                          }}
-                        >
-                          {description.length}
-                        </span>
-                        /200
-                      </InputAdornment>
-                    }
-                    onChange={(event) => {
-                      setDescription(event.target.value);
-                    }}
-                  />
-                  <FormHelperText>{errors.description?.message}</FormHelperText>
+                    endAdornment={<InputAdornment position="end"><span style={{ color: `${descriptionNotes.length > 200 ? "red" : "gray"}`, }}>{descriptionNotes.length}</span>/200</InputAdornment>}
+                    onChange={(event) => { setDescriptionNotes(event.target.value); }} />
+                  <FormHelperText>{errors.descriptionNotes?.message}</FormHelperText>
                 </FormControl>
-                <FormControl
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    flexDirection: "row",
-                  }}
-                >
-                  <h2>Cor</h2>
+                <FormControl style={{ display: "flex", justifyContent: "space-around", alignItems: "center", flexDirection: "row", }}>
+                  <Typography color={"gray"}>Cor</Typography>
                   <div>
-                    <Radio
-                      {...controlProps("RED")}
-                      sx={{
-                        color: NotesColors.RED,
-                        "&.Mui-checked": {
-                          color: NotesColors.RED,
-                        },
-                      }}
-                    />
-                    <Radio
-                      {...controlProps("ORANGE")}
-                      sx={{
-                        color: NotesColors.ORANGE,
-                        "&.Mui-checked": {
-                          color: NotesColors.ORANGE,
-                        },
-                      }}
-                    />
-                    <Radio
-                      {...controlProps("YELLOW")}
-                      sx={{
-                        color: NotesColors.YELLOW,
-                        "&.Mui-checked": {
-                          color: NotesColors.YELLOW,
-                        },
-                      }}
-                    />
-                    <Radio
-                      {...controlProps("CYAN")}
-                      sx={{
-                        color: NotesColors.CYAN,
-                        "&.Mui-checked": {
-                          color: NotesColors.CYAN,
-                        },
-                      }}
-                    />
-                    <Radio
-                      {...controlProps("BLUE")}
-                      sx={{
-                        color: NotesColors.BLUE,
-                        "&.Mui-checked": {
-                          color: NotesColors.BLUE,
-                        },
-                      }}
-                    />
-                    <Radio
-                      {...controlProps("PURPLE")}
-                      sx={{
-                        color: NotesColors.PURPLE,
-                        "&.Mui-checked": {
-                          color: NotesColors.PURPLE,
-                        },
-                      }}
-                    />
+                    <Radio {...controlProps("RED")} sx={{ color: noteColor("RED"), "&.Mui-checked": { color: noteColor("RED"), }, }} />
+                    <Radio {...controlProps("ORANGE")} sx={{ color: noteColor("ORANGE"), "&.Mui-checked": { color: noteColor("ORANGE"), }, }} />
+                    <Radio {...controlProps("YELLOW")} sx={{ color: noteColor("YELLOW"), "&.Mui-checked": { color: noteColor("YELLOW"), }, }} />
+                    <Radio {...controlProps("CYAN")} sx={{ color: noteColor("CYAN"), "&.Mui-checked": { color: noteColor("CYAN"), }, }} />
+                    <Radio {...controlProps("BLUE")} sx={{ color: noteColor("BLUE"), "&.Mui-checked": { color: noteColor("BLUE"), }, }} />
+                    <Radio {...controlProps("PURPLE")} sx={{ color: noteColor("PURPLE"), "&.Mui-checked": { color: noteColor("PURPLE"), }, }} />
                   </div>
                 </FormControl>
                 <FormControl>
@@ -533,10 +321,7 @@ export function Reminders() {
                       label="Data"
                       value={valueDatePicker}
                       inputFormat="DD-MM-YYYY"
-                      onChange={(newValue) => {
-                        setValueDatePicker(newValue);
-                        setValue("datePicker", newValue);
-                      }}
+                      onChange={(newValue) => { setValueDatePicker(newValue); setValue("datePicker", newValue); }}
                       renderInput={(params) => <TextField {...params} />}
                     />
                   </LocalizationProvider>
@@ -548,22 +333,16 @@ export function Reminders() {
                       label="Horário"
                       value={valueTimePicker}
                       inputFormat="HH:mm"
-                      onChange={(newValue) => {
-                        setValueTimePicker(newValue);
-                        setValue("timePicker", newValue);
-                      }}
+                      onChange={(newValue) => { setValueTimePicker(newValue); setValue("timePicker", newValue); }}
                       renderInput={(params) => <TextField {...params} />}
                     />
                   </LocalizationProvider>
-                  {
-                    <FormHelperText>
-                      {errors?.timePicker?.message}
-                    </FormHelperText>
-                  }
+                  <FormHelperText>{errors?.timePicker?.message}</FormHelperText>
                 </FormControl>
-
-                <Button variant="contained" type="submit">
-                  Submit
+                <Button variant="contained" type="submit" onClick={() => {
+                  setValue("descriptionTasks", "Task");
+                }}>
+                  Criar
                 </Button>
               </Box>
             </form>
@@ -572,57 +351,38 @@ export function Reminders() {
       </Header>
       <Cards>
         {userNotes?.map((item, index) => (
-          <Card
-            key={index}
-            sx={{
-              minWidth: 275,
-              maxWidth: "auto",
-              backgroundColor: `${noteColor(item.color)}`,
-              color: "white",
-            }}
-          >
+          <Card key={index} sx={{ minWidth: 275, maxWidth: "auto", backgroundColor: `${noteColor(item.color)}`, color: "white", }}>
             <CardContent>
-              <div
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Typography sx={{ fontSize: 14 }} color="white" gutterBottom>
+              <div style={{ color: "white", width: "100%", height: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.1rem" }}>
+                <Typography style={{ width: "33%", fontSize: 14, marginRight: "auto", display: "flex", justifyContent: "center", alignItems: "center", }} >
                   {item.date !== null && dayjs(item.date).format("DD/MM/YYYY")}
                 </Typography>
-                <Typography sx={{ fontSize: 14 }} color="white" gutterBottom>
+                <Typography style={{ width: "33%", fontSize: 14, marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "center", alignItems: "center", }} >
                   {item.time !== null && <>{item.time}</>}
                 </Typography>
-                {item.taskNotes?.length > 0 && (
-                  <Typography sx={{ fontSize: 14 }} color="white" gutterBottom>
-                    Lista{" "}
-                    {
-                      item.taskNotes.filter(
-                        (task) => task.status === "COMPLETE"
-                      ).length
-                    }{" "}
-                    / {item.taskNotes.length}
-                  </Typography>
-                )}
+                <Typography style={{ width: "33%", fontSize: 14, marginLeft: "auto", display: "flex", justifyContent: "center", alignItems: "center", }}>
+                  {item.taskNotes?.length > 0 && (
+                    <>
+                      Lista{" "}
+                      {
+                        item.taskNotes.filter(
+                          (task) => task.status === "COMPLETE"
+                        ).length
+                      }{" "}
+                      / {item.taskNotes.length}
+                    </>
+                  )}
+                </Typography>
               </div>
-
-              <Typography variant="h6" component="div" sx={styleNote}>
+              <Typography variant="h6" component="div" style={{ whiteSpace: "nowrap", width: "100%", overflow: "hidden", textOverflow: "ellipsis", }}>
                 {item.title}
               </Typography>
-
-              <Typography variant="body2" sx={styleNote}>
+              <Typography variant="body2" style={{ whiteSpace: "nowrap", width: "100%", height: "1rem", overflow: "hidden", textOverflow: "ellipsis", }}>
                 {item.description}
               </Typography>
             </CardContent>
             <CardActions>
-              <Button
-                variant="outlined"
-                color="inherit"
-                onClick={() => handleOpenModalViewNote(item)}
-              >
+              <Button variant="outlined" color="inherit" onClick={() => handleOpenModalViewNote(item)}              >
                 Ver mais
               </Button>
             </CardActions>
@@ -635,125 +395,136 @@ export function Reminders() {
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <Box sx={styleTasks}>
-          {alertTask !== "" && (
-            <Alert severity="success">
-              <div>{alertTask}</div>
-            </Alert>
-          )}
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <span>{selectedItem?.title}</span>
-            <Button variant="outlined" onClick={handleDeleteNote} color="error">
-              Remover Nota
-            </Button>
+        <Box sx={boxStyle} style={{ width: 625 }} >
+          <div style={{ width: "100%" }}>
+            {alertErrorTask !== "" && (<Alert severity="error"> <div>{alertErrorTask}</div> </Alert>)} {alertSuccessTask !== "" && (<Alert severity="success"> <div>{alertSuccessTask}</div> </Alert>)}
           </div>
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "5rem",
-            }}
-          >
-            <Button
-              onClick={() => {
-                setNewTask(true);
-              }}
-              style={{
-                display: `${NewTask ? "none" : "flex"}`,
-              }}
-              color="primary"
-              variant="outlined"
-              startIcon={<Add />}
-            >
-              Adicionar item
-            </Button>
-
-            {NewTask && (
-              <form
-                onSubmit={handleSubmit(handleCreateTask)}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <FormControl>
-                  <InputLabel>Item</InputLabel>
-                  <OutlinedInput
-                    label="Item"
-                    {...register("description")}
-                    placeholder="Descrição"
-                  />
-                </FormControl>
-                <IconButton
-                  type="submit"
-                  onClick={() => {
-                    setValue("title", "Task");
-                  }}
-                >
-                  <Done color="success" />
-                </IconButton>
-                <IconButton
-                  onClick={() => {
-                    setNewTask(false);
-                  }}
-                >
-                  <Cancel color="error" />
-                </IconButton>
-              </form>
-            )}
+          <div style={{ width: "100%", display: "flex", justifyContent: "center", alignItems: "center", }}>
+            {
+              editNote ?
+                (
+                  <form onSubmit={handleSubmit(handleUpdateNote)}>
+                    <Box style={{ width: "400px", display: "flex", flexDirection: "column", gap: 10 }}>
+                      <Typography variant="h5" component="div" className="center">Editar Nota</Typography>
+                      <FormControl>
+                        <InputLabel>Título*</InputLabel>
+                        <OutlinedInput
+                          label="Título*"
+                          {...register("title")}
+                          placeholder="Título"
+                          defaultValue={selectedItem.title}
+                          endAdornment={<InputAdornment position="end"><span style={{ color: `${title.length > 40 ? "red" : "gray"}`, }}>  {title.length}     </span>/40    </InputAdornment>}
+                          onChange={(event) => { setTitle(event.target.value); }} />
+                        <FormHelperText>{errors.title?.message}</FormHelperText>
+                      </FormControl>
+                      <FormControl>
+                        <InputLabel>Descrição</InputLabel>
+                        <OutlinedInput
+                          label="Descrição"
+                          {...register("descriptionNotes")}
+                          placeholder="Descrição"
+                          defaultValue={selectedItem.description}
+                          endAdornment={<InputAdornment position="end"><span style={{ color: `${descriptionNotes.length > 200 ? "red" : "gray"}`, }}>{descriptionNotes.length}</span>/200</InputAdornment>}
+                          onChange={(event) => { setDescriptionNotes(event.target.value); }} />
+                        <FormHelperText>{errors.descriptionNotes?.message}</FormHelperText>
+                      </FormControl>
+                      <FormControl style={{ display: "flex", justifyContent: "space-around", alignItems: "center", flexDirection: "row", }}>
+                        <Typography color={"gray"}>Cor</Typography>
+                        <div>
+                          <Radio {...controlProps("RED")} sx={{ color: noteColor("RED"), "&.Mui-checked": { color: noteColor("RED"), }, }} />
+                          <Radio {...controlProps("ORANGE")} sx={{ color: noteColor("ORANGE"), "&.Mui-checked": { color: noteColor("ORANGE"), }, }} />
+                          <Radio {...controlProps("YELLOW")} sx={{ color: noteColor("YELLOW"), "&.Mui-checked": { color: noteColor("YELLOW"), }, }} />
+                          <Radio {...controlProps("CYAN")} sx={{ color: noteColor("CYAN"), "&.Mui-checked": { color: noteColor("CYAN"), }, }} />
+                          <Radio {...controlProps("BLUE")} sx={{ color: noteColor("BLUE"), "&.Mui-checked": { color: noteColor("BLUE"), }, }} />
+                          <Radio {...controlProps("PURPLE")} sx={{ color: noteColor("PURPLE"), "&.Mui-checked": { color: noteColor("PURPLE"), }, }} />
+                        </div>
+                      </FormControl>
+                      <div className="center" style={{ gap: 20, marginTop: 20 }}>
+                        <Button color="success" variant="contained" type="submit" onClick={() => {
+                          setValue("descriptionTasks", "Task");
+                        }}>
+                          Confirmar
+                        </Button>
+                        <Button color="error" variant="contained" onClick={handleClickEditNote}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </Box>
+                  </form>
+                ) : (
+                  <>
+                    <div style={{ width: "70%", display: "flex", flexDirection: "column", }}>
+                      <Typography style={{ fontSize: 16 }}>
+                        {selectedItem?.title}
+                      </Typography>
+                      <Typography
+                        style={{ fontSize: 12, width: "100%", overflowWrap: "break-word", wordWrap: "break-word", wordBreak: "break-word", }}>
+                        {selectedItem?.description}
+                      </Typography>
+                    </div>
+                    <div>
+                      <IconButton onClick={handleClickEditNote}>
+                        <Edit color="primary" />
+                      </IconButton>
+                      <IconButton onClick={handleDeleteNote}>
+                        <Delete color="error" />
+                      </IconButton>
+                    </div>
+                  </>
+                )
+            }
           </div>
-          <div
-            style={{
-              width: "100%",
-              maxHeight: "500px",
-              display: "flex",
-              flexDirection: "column",
-              overflowY: "scroll",
-            }}
-          >
-            {selectedItem?.taskNotes?.map((task, index) => (
-              <div
-                key={index}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span>{task.description}</span>
-                <div>
-                  <Checkbox
-                    checked={task.status === "COMPLETE"}
-                    onClick={() => {
-                      setIsChange(true);
-                      handleUpdateTask(task);
-                    }}
-                  />
-                  <IconButton
-                    onClick={() => {
-                      handleDeleteTask(task);
-                    }}
-                  >
-                    <Delete color="error" />
-                  </IconButton>
-                </div>
+          {
+            !editNote &&
+            <>
+              <div className="center" style={{ width: "100%", height: "5rem", }}>
+                <Button onClick={() => { setNewTask(true); }} style={{ display: `${NewTask ? "none" : "flex"}` }} color="primary" variant="outlined" startIcon={<Add />} >
+                  Adicionar item
+                </Button>
+                {NewTask && (
+                  <form onSubmit={handleSubmit(handleCreateTask)} className="center">
+                    <FormControl>
+                      <InputLabel>Item*</InputLabel>
+                      <OutlinedInput
+                        label="Item*"
+                        {...register("descriptionTasks")}
+                        placeholder="Descrição"
+                        endAdornment={<InputAdornment position="end"><span style={{ color: `${descriptionTasks.length > 50 ? "red" : "gray"}`, }}>{descriptionTasks.length}</span>/50</InputAdornment>}
+                        onChange={(event) => { setDescriptionTasks(event.target.value); }} />
+                      <FormHelperText>
+                        {errors.descriptionTasks?.message}
+                      </FormHelperText>
+                    </FormControl>
+                    <div>
+                      <IconButton type="submit" onClick={() => { setValue("title", "Task"); }}>
+                        <Done color="success" />
+                      </IconButton>
+                      <IconButton onClick={() => { setNewTask(false); }}>
+                        <Cancel color="error" />
+                      </IconButton>
+                    </div>
+                  </form>
+                )}
               </div>
-            ))}
-          </div>
+              <div style={{ width: "100%", maxHeight: "500px", display: "flex", flexDirection: "column", overflowY: "scroll" }} >
+                {selectedItem?.taskNotes?.map((task, index) => (
+                  <div key={index} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", }}>
+                    <Checkbox checked={task.status === "COMPLETE"} onClick={() => { setIsChange(true); handleUpdateTask(task); }} color="success" />
+                    <span style={{ width: "100%", justifyContent: "flex-start" }}>
+                      {task.description}
+                    </span>
+                    <IconButton onClick={() => { handleDeleteTask(task); }}>
+                      <Delete color="error" />
+                    </IconButton>
+                  </div>
+                ))}
+              </div>
+            </>
+          }
         </Box>
       </Modal>
-    </Container>
+    </Container >
   );
 }
+
+const boxStyle = { position: "absolute" as "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", bgcolor: "background.paper", borderRadius: 1, boxShadow: 24, p: 4, gap: 1, };
