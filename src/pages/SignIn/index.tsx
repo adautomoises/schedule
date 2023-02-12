@@ -7,7 +7,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 // Styles
 import { Container, Header, FormContainer } from "./styles";
-import { styled, FormControlProps, Snackbar, Alert } from "@mui/material";
+import { styled, FormControlProps, Alert } from "@mui/material";
 import {
   Button,
   FormControl,

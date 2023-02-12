@@ -32,6 +32,7 @@ import { useForm } from "react-hook-form";
 import api from "../../services/api";
 import { Container, FormContainer, Header } from "./styles";
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 interface ExpandMoreProps extends IconButtonProps {
   expand: boolean;
@@ -72,6 +73,7 @@ interface IFormInputs {
 }
 
 export function Friends() {
+  const navigate = useNavigate();
   const userUUID = localStorage.getItem("@schedule:user-uuid-1.0.0");
   const [friendList, setFriendList] = useState<FriendList>({} as FriendList);
   const [alertError, setAlertError] = useState("");
@@ -109,7 +111,7 @@ export function Friends() {
           setAlertError(error.response.data.message);
         }
       });
-  }, []);
+  }, [userUUID]);
 
   const handleAddFriend = (data: IFormInputs) => {
     setAlertError("");
@@ -172,29 +174,23 @@ export function Friends() {
   };
 
   const handleViewProfile = (Friend: Friend) => {
-    console.log(Friend);
+    navigate(`/perfil/${Friend.nickName}`);
   };
 
   return (
     <Container>
       <FormContainer>
+        {alertError !== "" && (
+          <Alert severity="error">
+            <div>{alertError}</div>
+          </Alert>
+        )}
+        {alertSuccess !== "" && (
+          <Alert severity="success">
+            <div>{alertSuccess}</div>
+          </Alert>
+        )}
         <Header>
-          <div
-            style={{
-              width: "100%",
-            }}
-          >
-            {alertError !== "" && (
-              <Alert severity="error">
-                <div>{alertError}</div>
-              </Alert>
-            )}
-            {alertSuccess !== "" && (
-              <Alert severity="success">
-                <div>{alertSuccess}</div>
-              </Alert>
-            )}
-          </div>
           <form onSubmit={handleSubmit(handleAddFriend)}>
             <div
               style={{
@@ -220,7 +216,6 @@ export function Friends() {
             </div>
           </form>
         </Header>
-
         <TableContainer component={Paper}>
           <Table aria-label="collapsible table">
             <TableHead>

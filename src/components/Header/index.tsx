@@ -8,9 +8,10 @@ import {
 } from "@mui/material";
 import { Container } from "./styles";
 import { AccountCircle, NotificationsNone, Search } from "@mui/icons-material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../context/userContext";
 import { useNavigate } from "react-router-dom";
+import api from "../../services/api";
 
 const ProfileButton = styled(Button)<ButtonProps>({
   color: "gray",
@@ -21,7 +22,7 @@ const ProfileButton = styled(Button)<ButtonProps>({
 
 export function Header() {
   const navigate = useNavigate();
-  const { user, UserSignOut } = useAuth();
+  const { user, UserSignOut, setUser } = useAuth();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -35,9 +36,26 @@ export function Header() {
   const handleSignOut = () => {
     UserSignOut();
     setAnchorEl(null);
-    navigate("/");
+    navigate("/entrar");
     window.location.reload();
   };
+  const handleClickProfile = () => {
+    handleClose();
+    navigate(`/perfil/${user?.nickName}`);
+  };
+
+  useEffect(() => {
+    api
+      .get("/users/getById", {
+        params: {
+          uuid: localStorage.getItem("@schedule:user-uuid-1.0.0"),
+        },
+      })
+      .then((response) => {
+        setUser(response.data);
+      })
+      .catch((error: Error) => console.log(error));
+  }, [setUser]);
 
   return (
     <Container>
@@ -78,7 +96,7 @@ export function Header() {
               horizontal: "right",
             }}
           >
-            <MenuItem onClick={handleClose}>Perfil</MenuItem>
+            <MenuItem onClick={handleClickProfile}>Perfil</MenuItem>
             <MenuItem onClick={handleSignOut}>Sair</MenuItem>
           </Menu>
         </div>

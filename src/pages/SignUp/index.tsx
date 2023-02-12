@@ -11,7 +11,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 // Styles
 import { Container, Header, FormContainer } from "./styles";
-import { styled, FormControlProps, Snackbar, Alert } from "@mui/material";
+import { styled, FormControlProps, Alert } from "@mui/material";
 import {
   Button,
   FormControl,

@@ -1,7 +1,4 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-import api from "../../services/api";
 import { useAuth } from "../../context/userContext";
 
 import {
@@ -29,22 +26,8 @@ const NavButton = styled(IconButton)<IconButtonProps>({
 
 export function Menu() {
   const navigate = useNavigate();
-  const [isAuth, setIsAuth] = useState(false);
-  const { setUser } = useAuth();
 
-  useEffect(() => {
-    api
-      .get("/users/getById", {
-        params: {
-          uuid: localStorage.getItem("@schedule:user-uuid-1.0.0"),
-        },
-      })
-      .then((response) => {
-        setUser(response.data);
-        setIsAuth(true);
-      })
-      .catch((error: Error) => console.log(error));
-  }, [setUser]);
+  const { user } = useAuth();
 
   return (
     <Container>
@@ -57,12 +40,15 @@ export function Menu() {
           }}
         />
       </Logo>
-      {isAuth ? (
+      {user ? (
         <Actions>
           <NavButton
             style={{
               backgroundColor:
                 window.location.pathname === "/calendario" ? "#c9c9c9" : "",
+            }}
+            onClick={() => {
+              navigate("/calendario");
             }}
           >
             <Today />
@@ -84,6 +70,9 @@ export function Menu() {
             style={{
               backgroundColor:
                 window.location.pathname === "/eventos" ? "#c9c9c9" : "",
+            }}
+            onClick={() => {
+              navigate("/eventos");
             }}
           >
             <Festival />
