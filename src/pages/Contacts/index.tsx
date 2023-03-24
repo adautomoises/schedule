@@ -1,100 +1,74 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
+
 import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+
 import { AxiosError } from "axios";
 
-import {
-  Checkbox,
-  IconButton,
-  Menu,
-  MenuItem,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  OutlinedInput,
-  InputLabel,
-  FormControl,
-  styled,
-  FormControlProps,
-  Modal,
-  Button,
-  Box,
-  Alert,
-  Collapse,
-} from "@mui/material";
-import {
-  Close,
-  Delete,
-  Done,
-  MoreVert,
-  Search,
-  Add,
-} from "@mui/icons-material";
-
+import { Checkbox, IconButton, Menu, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, OutlinedInput, InputLabel, FormControl, styled, FormControlProps, Modal, Button, Box, Alert, FormHelperText, Pagination, } from "@mui/material";
+import { Close, Delete, Done, MoreVert, Search, Add, } from "@mui/icons-material";
 import { Container, FormContainer, Header } from "./styles";
-
-interface IFormInputs {
-  uuid: string;
-  name: string;
-  nickname: string;
-  phoneNumber: number;
-}
-
-const Form = styled(FormControl)<FormControlProps>({
-  width: 150,
-});
-
-const style = {
-  position: "absolute" as "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: 400,
-  bgcolor: "background.paper",
-  borderRadius: 1,
-  boxShadow: 24,
-  p: 4,
-  display: "flex",
-  flexDirection: "column",
-  gap: 1,
-};
+import "../../styles.css";
 
 interface IErrorResponse {
   message: string;
 }
+
+interface IFormInputs {
+  name: string;
+  nickname: string;
+  phoneNumber: number;
+  uuid: string;
+}
+
+interface ContactsProps {
+  contacts: IFormInputs[];
+  page: number;
+  size: number;
+  totalPages: number;
+  totalContacts: number;
+}
+
+const schema = yup.object().shape({
+  name: yup.string().required("Nome é obrigatório!"),
+  nickname: yup.string().required("Nome de Usuário é obrigatório!"),
+  phoneNumber: yup
+    .string()
+    .matches(/^\d+$/, "Número de Contato inválido. (Exemplo: (00) 0 0000-0000)")
+    .required("Número de Contato é obrigatório!"),
+});
 
 export function Contacts() {
   const scheduleUUID = localStorage.getItem(
     "@schedule:user-schedule-uuid-1.0.0"
   );
 
-  const [openAlertNewContact, setOpenAlertNewContact] = useState(false);
-  const [alertMessageNewContact, setAlertMessageNewContact] = useState("");
-  const [openAlertPatchContact, setOpenAlertPatchContact] = useState(false);
-  const [alertMessagePatchContact, setAlertMessagePatchContact] = useState("");
-  const [openAlertDeleteContact, setOpenAlertDeleteContact] = useState(false);
-  const [alertMessageDeleteContact, setAlertMessageDeleteContact] =
-    useState("");
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<IFormInputs>({ resolver: yupResolver(schema) });
 
-  const [contacts, setContacts] = useState<IFormInputs[]>();
+  const [contacts, setContacts] = useState<ContactsProps>({} as ContactsProps);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPagination, setCurrentPagination] = useState(1);
   const [indexes, setIndexes] = useState<number | null>(null);
   const [edit, setEdit] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const { register, handleSubmit, reset } = useForm<IFormInputs>();
 
   const [checkedAll, setCheckedAll] = useState(false);
   const [includesArray, setIncludesArray] = useState([] as number[]);
 
   const [openModal, setOpenModal] = useState(false);
   const handleOpenModal = () => setOpenModal(true);
-  const handleCloseModal = () => setOpenModal(false);
+  const handleCloseModal = () => { setOpenModal(false); reset(); };
+
+  const [alertSuccess, setAlertSuccess] = useState("");
+  const [alertError, setAlertError] = useState("");
+  const [alertErrorModal, setAlertErrorModal] = useState("");
 
   const newContact = (data: IFormInputs) => {
+    setAlertErrorModal("");
+
     let request = {
       name: data.name,
       nickname: data.nickname,
@@ -107,17 +81,37 @@ export function Contacts() {
           scheduleUUID: scheduleUUID,
         },
       })
-      .then(() => {
-        window.location.reload();
+      .then((response) => {
+        if (contacts.contacts.length < 5) {
+          const Contacts = [...contacts.contacts];
+          Contacts.push(response.data)
+          setContacts({ ...contacts, contacts: Contacts })
+        } else {
+          if (contacts.totalContacts % 5 === 0) {
+            setCurrentPage(contacts.totalPages);
+            setCurrentPagination(contacts.totalPages + 1);
+          } else if (contacts.totalContacts % 5 !== 0) {
+            setCurrentPage(contacts.totalPages - 1);
+            setCurrentPagination(contacts.totalPages);
+          }
+        }
+        handleCloseModal();
+        setAlertSuccess(
+          response.data.nickname + " foi adicionado com sucesso!"
+        );
+        setTimeout(() => {
+          setAlertSuccess("");
+        }, 3000);
       })
       .catch((error: AxiosError<IErrorResponse>) => {
-        setOpenAlertNewContact(true);
         if (error.response) {
-          setAlertMessageNewContact(error.response.data.message);
+          setAlertErrorModal(error.response.data.message);
         }
       });
   };
   const patchContact = (data: IFormInputs) => {
+    setAlertError("");
+
     let request = {
       name: data.name,
       nickname: data.nickname,
@@ -127,42 +121,55 @@ export function Contacts() {
     api
       .patch(`/contacts`, request, {
         params: {
-          uuid: data.uuid,
+          scheduleUUID: scheduleUUID,
+          contactUUID: data.uuid,
         },
       })
       .then((response) => {
-        setOpenAlertPatchContact(true);
-        setAlertMessagePatchContact(response.data.message);
+        const Contacts = [...contacts.contacts];
+        setContacts({
+          ...contacts, contacts: Contacts.map((contact) => {
+            if (contact.uuid === response.data.uuid) {
+              contact = response.data;
+            }
+            return contact;
+          })
+        })
+        setEdit(false);
+        setAlertSuccess(response.data.nickname + " atualizado com sucesso!");
         setTimeout(() => {
-          window.location.reload();
+          setAlertSuccess("");
         }, 3000);
       })
       .catch((error: AxiosError<IErrorResponse>) => {
-        setOpenAlertPatchContact(true);
         if (error.response) {
-          setAlertMessagePatchContact(error.response.data.message);
+          setAlertError(error.response.data.message);
         }
       });
   };
   const deleteContact = () => {
-    if (contacts && indexes !== null && contacts[indexes].uuid) {
+    if (contacts.contacts && indexes !== null && contacts.contacts[indexes].uuid) {
       api
         .delete(`/contacts`, {
           params: {
-            uuid: contacts[indexes].uuid,
+            uuid: contacts.contacts[indexes].uuid,
           },
         })
         .then((response) => {
-          setOpenAlertDeleteContact(true);
-          setAlertMessageDeleteContact(response.data.message);
+          const Contacts = [...contacts.contacts];
+          setContacts({ ...contacts, contacts: Contacts.filter((contact) => contact.uuid !== contacts.contacts[indexes].uuid) })
+          setCurrentPage(0);
+          setCurrentPagination(1);
+
+          setAlertSuccess(response.data.message);
           setTimeout(() => {
-            window.location.reload();
+            setAlertSuccess("");
           }, 3000);
+          setIncludesArray([]);
         })
         .catch((error: AxiosError<IErrorResponse>) => {
-          setOpenAlertDeleteContact(true);
           if (error.response) {
-            setAlertMessageDeleteContact(error.response.data.message);
+            setAlertError(error.response.data.message);
           }
         });
     }
@@ -172,27 +179,31 @@ export function Contacts() {
   const manyDeleteContact = () => {
     let request: string[] = [];
 
-    contacts?.forEach((_, index) => {
+    contacts.contacts?.forEach((contact, index) => {
       if (includesArray.includes(index)) {
-        request.push(_.uuid);
+        request.push(contact.uuid);
       }
     });
-
     api
       .delete(`/contacts/manyDeleted`, {
         data: request,
       })
       .then((response) => {
-        setOpenAlertDeleteContact(true);
-        setAlertMessageDeleteContact(response.data.message);
+        const Contacts = [...contacts.contacts];
+        setContacts({
+          ...contacts, contacts:
+            Contacts.filter(item => !request.includes(item.uuid))
+        })
+        setAlertSuccess(response.data.message);
         setTimeout(() => {
-          window.location.reload();
+          setAlertSuccess("");
         }, 3000);
+        setIncludesArray([]);
+        setCheckedAll(false);
       })
       .catch((error: AxiosError<IErrorResponse>) => {
-        setOpenAlertDeleteContact(true);
         if (error.response) {
-          setAlertMessageDeleteContact(error.response.data.message);
+          setAlertError(error.response.data.message);
         }
       });
   };
@@ -229,7 +240,7 @@ export function Contacts() {
     if (checkedAll && includesArray.length > 0) {
       setIncludesArray([]);
     } else if (!checkedAll) {
-      contacts?.forEach((_, index) => {
+      contacts.contacts?.forEach((_, index) => {
         if (!includesArray.includes(index)) {
           setIncludesArray((prevState) => [...prevState, index]);
         }
@@ -237,59 +248,58 @@ export function Contacts() {
     }
   };
 
+  const handleChangePage = (event: React.ChangeEvent<unknown>, value: number) => {
+    setEdit(false);
+    setIncludesArray([]);
+    if (value > currentPage) {
+      setCurrentPage(value - 1);
+      setCurrentPagination(value);
+    } else if (value <= currentPage) {
+      setCurrentPage(value - 1);
+      setCurrentPagination(value);
+    } else {
+      setCurrentPagination(value);
+    }
+  };
+
   useEffect(() => {
+    setAlertError("");
     api
-      .get("/contacts", {
+      .get(`/contacts/paged`, {
         params: {
           scheduleUUID: scheduleUUID,
+          size: 5,
+          page: currentPage,
+          sort: 'name',
+          order: 'asc'
         },
       })
-      .then((response) => setContacts(response.data))
-      .catch((error: Error) => console.log(error));
-  }, [scheduleUUID]);
+      .then((response) => {
+        setContacts(response.data);
+      })
+      .catch((error: AxiosError<IErrorResponse>) => {
+        if (error.response) {
+          setAlertError(error.response.data.message);
+        }
+      });
+  }, [scheduleUUID, currentPage, contacts.totalContacts]);
 
   return (
     <Container>
       <FormContainer>
-        <Collapse in={openAlertDeleteContact}>
-          <Alert
-            action={
-              <IconButton
-                aria-label="close"
-                color="inherit"
-                size="small"
-                onClick={() => {
-                  setOpenAlertDeleteContact(false);
-                }}
-              >
-                <Close fontSize="inherit" />
-              </IconButton>
-            }
-          >
-            {alertMessageDeleteContact}
+        {alertError !== "" && (
+          <Alert severity="error">
+            <div>{alertError}</div>
           </Alert>
-        </Collapse>
-        <Collapse in={openAlertPatchContact}>
-          <Alert
-            action={
-              <IconButton
-                aria-label="close"
-                color="inherit"
-                size="small"
-                onClick={() => {
-                  setOpenAlertPatchContact(false);
-                }}
-              >
-                <Close fontSize="inherit" />
-              </IconButton>
-            }
-          >
-            {alertMessagePatchContact}
+        )}
+        {alertSuccess !== "" && (
+          <Alert severity="success">
+            <div>{alertSuccess}</div>
           </Alert>
-        </Collapse>
+        )}
         <Header>
           {includesArray.length > 0 ||
-          (checkedAll && includesArray.length > 0) ? (
+            (checkedAll && includesArray.length > 0) ? (
             <>
               <div>
                 {includesArray.length > 1 ? (
@@ -325,45 +335,45 @@ export function Contacts() {
                   <form onSubmit={handleSubmit(newContact)}>
                     <Box sx={style}>
                       <FormControl>
-                        <InputLabel>Nome</InputLabel>
-                        <OutlinedInput label="Nome" {...register("name")} />
+                        <InputLabel>Nome*</InputLabel>
+                        <OutlinedInput
+                          label="Nome*"
+                          placeholder="Nome"
+                          {...register("name")}
+                        />
+                        <FormHelperText>{errors.name?.message}</FormHelperText>
                       </FormControl>
                       <FormControl>
-                        <InputLabel>Nome de Usuário</InputLabel>
+                        <InputLabel>Nome de Usuário*</InputLabel>
                         <OutlinedInput
-                          label="Nome de Usuário"
+                          label="Nome de Usuário*"
+                          placeholder="Nome de Usuário"
                           {...register("nickname")}
                         />
+                        <FormHelperText>
+                          {errors.nickname?.message}
+                        </FormHelperText>
                       </FormControl>
                       <FormControl>
-                        <InputLabel>Número de Contato</InputLabel>
+                        <InputLabel>Número de Contato*</InputLabel>
                         <OutlinedInput
-                          label="Número de Contato"
+                          label="Número de Contato*"
+                          placeholder="(00) 0 0000-0000"
                           {...register("phoneNumber")}
+                          type="number"
                         />
+                        <FormHelperText>
+                          {errors.phoneNumber?.message}
+                        </FormHelperText>
                       </FormControl>
                       <Button variant="contained" type="submit">
                         Criar
                       </Button>
-                      <Collapse in={openAlertNewContact}>
-                        <Alert
-                          severity="error"
-                          action={
-                            <IconButton
-                              aria-label="close"
-                              color="inherit"
-                              size="small"
-                              onClick={() => {
-                                setOpenAlertNewContact(false);
-                              }}
-                            >
-                              <Close fontSize="inherit" />
-                            </IconButton>
-                          }
-                        >
-                          {alertMessageNewContact}
+                      {alertErrorModal !== "" && (
+                        <Alert severity="error">
+                          <div>{alertErrorModal}</div>
                         </Alert>
-                      </Collapse>
+                      )}
                     </Box>
                   </form>
                 </Modal>
@@ -373,7 +383,7 @@ export function Contacts() {
         </Header>
         <form onSubmit={handleSubmit(patchContact)}>
           <TableContainer component={Paper}>
-            <Table sx={{ minWidth: 650 }} aria-label="simple table">
+            <Table aria-label="simple table">
               <TableHead>
                 <TableRow>
                   <TableCell padding="checkbox">
@@ -391,7 +401,7 @@ export function Contacts() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {contacts?.map((row, index) => (
+                {contacts.contacts?.map((row, index) => (
                   <TableRow
                     key={index}
                     sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
@@ -414,6 +424,9 @@ export function Contacts() {
                               {...register("name")}
                               defaultValue={row.name}
                             />
+                            <FormHelperText>
+                              {errors.name?.message}
+                            </FormHelperText>
                           </Form>
                         </TableCell>
                         <TableCell align="left">
@@ -424,6 +437,9 @@ export function Contacts() {
                               {...register("nickname")}
                               defaultValue={row.nickname}
                             />
+                            <FormHelperText>
+                              {errors.nickname?.message}
+                            </FormHelperText>
                           </Form>
                         </TableCell>
                         <TableCell align="left">
@@ -434,6 +450,9 @@ export function Contacts() {
                               {...register("phoneNumber")}
                               defaultValue={row.phoneNumber}
                             />
+                            <FormHelperText>
+                              {errors.phoneNumber?.message}
+                            </FormHelperText>
                           </Form>
                         </TableCell>
                         <TableCell>
@@ -494,7 +513,31 @@ export function Contacts() {
             </Table>
           </TableContainer>
         </form>
+        <div className="center"
+          style={{ width: "100%", margin: "10px 0" }}>
+
+          <Pagination shape="rounded" count={contacts.totalPages} page={currentPagination} siblingCount={0} onChange={handleChangePage} />
+        </div>
       </FormContainer>
     </Container>
   );
 }
+
+const Form = styled(FormControl)<FormControlProps>({
+  width: 150,
+});
+
+const style = {
+  position: "absolute" as "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 400,
+  bgcolor: "background.paper",
+  borderRadius: 1,
+  boxShadow: 24,
+  p: 4,
+  display: "flex",
+  flexDirection: "column",
+  gap: 1,
+};

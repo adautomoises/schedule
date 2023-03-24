@@ -16,6 +16,15 @@ export const Container = styled.div`
 
 export const Header = styled.div`
   width: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-direction: column;
+  gap: 10;
+`;
+
+export const Div100 = styled.div`
+  width: 100%;
 `;
 
 export const Cards = styled.div`

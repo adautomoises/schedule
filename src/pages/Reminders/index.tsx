@@ -13,8 +13,8 @@ import { DatePicker, LocalizationProvider, TimePicker } from "@mui/x-date-picker
 import { UserNotes, IFormInputs, IErrorResponse, TaskProps } from "../../interfaces/RemindersInterface";
 import { NotesColors } from "../../enum/RemindersEnum";
 //Styles
-import "./styles.css"
-import { Container, Header, Cards } from "./styles";
+import "../../styles.css";
+import { Container, Header, Cards, Div100 } from "./styles";
 import { Add, Cancel, Delete, Done, Edit } from "@mui/icons-material";
 import { Card, Box, CardActions, CardContent, Button, Typography, OutlinedInput, IconButton, Modal, FormControl, InputLabel, Checkbox, InputAdornment, Radio, FormHelperText, TextField, Alert } from "@mui/material";
 
@@ -39,7 +39,18 @@ export function Reminders() {
 
   const [selectedItem, setSelectedItem] = useState<UserNotes>({} as UserNotes);
   const [openModalViewNote, setOpenModalViewNote] = useState(false);
-  const handleOpenModalViewNote = (item: UserNotes) => { setSelectedItem(item); setOpenModalViewNote(true); }; const handleCloseModalViewNote = () => { setOpenModalViewNote(false); setNewTask(false); patchTasks(); reset(); setEditNote(false); };
+  const handleOpenModalViewNote = (item: UserNotes) => {
+    setSelectedItem(item);
+    setOpenModalViewNote(true);
+  };
+  const handleCloseModalViewNote = () => {
+    setSelectedColor("RED");
+    setOpenModalViewNote(false);
+    setNewTask(false);
+    patchTasks();
+    reset();
+    setEditNote(false);
+  };
   const [isChange, setIsChange] = useState(false);
 
   const [title, setTitle] = useState("");
@@ -276,78 +287,76 @@ export function Reminders() {
   return (
     <Container>
       <Header>
-        <div style={{ width: "100%", display: "flex", justifyContent: "space-around", alignItems: "center", flexDirection: "column", gap: 10, }}>
-          <div style={{ width: "100%", }}>
-            {alertErrorNote !== "" && (<Alert severity="error"><div>{alertErrorNote}</div></Alert>)} {alertSuccessNote !== "" && (<Alert severity="success"><div>{alertSuccessNote}</div></Alert>)}
-          </div>
-          <Button onClick={handleOpenModalNewNote} color="primary" variant="outlined" startIcon={<Add />}>Nota</Button>
-          <Modal open={openModalNewNote} onClose={handleCloseModalNewNote} aria-labelledby="modal-modal-title" aria-describedby="modal-modal-description">
-            <form onSubmit={handleSubmit(handleCreateNote)}>
-              <Box sx={boxStyle} style={{ width: "400px", display: "flex", flexDirection: "column" }}>
-                <FormControl>
-                  <InputLabel>Título*</InputLabel>
-                  <OutlinedInput
-                    label="Título*"
-                    {...register("title")}
-                    placeholder="Título"
-                    endAdornment={<InputAdornment position="end"><span style={{ color: `${title.length > 40 ? "red" : "gray"}`, }}>  {title.length}     </span>/40    </InputAdornment>}
-                    onChange={(event) => { setTitle(event.target.value); }} />
-                  <FormHelperText>{errors.title?.message}</FormHelperText>
-                </FormControl>
-                <FormControl>
-                  <InputLabel>Descrição</InputLabel>
-                  <OutlinedInput
-                    label="Descrição"
-                    {...register("descriptionNotes")}
-                    placeholder="Descrição"
-                    endAdornment={<InputAdornment position="end"><span style={{ color: `${descriptionNotes.length > 200 ? "red" : "gray"}`, }}>{descriptionNotes.length}</span>/200</InputAdornment>}
-                    onChange={(event) => { setDescriptionNotes(event.target.value); }} />
-                  <FormHelperText>{errors.descriptionNotes?.message}</FormHelperText>
-                </FormControl>
-                <FormControl style={{ display: "flex", justifyContent: "space-around", alignItems: "center", flexDirection: "row", }}>
-                  <Typography color={"gray"}>Cor</Typography>
-                  <div>
-                    <Radio {...controlProps("RED")} sx={{ color: noteColor("RED"), "&.Mui-checked": { color: noteColor("RED"), }, }} />
-                    <Radio {...controlProps("ORANGE")} sx={{ color: noteColor("ORANGE"), "&.Mui-checked": { color: noteColor("ORANGE"), }, }} />
-                    <Radio {...controlProps("YELLOW")} sx={{ color: noteColor("YELLOW"), "&.Mui-checked": { color: noteColor("YELLOW"), }, }} />
-                    <Radio {...controlProps("CYAN")} sx={{ color: noteColor("CYAN"), "&.Mui-checked": { color: noteColor("CYAN"), }, }} />
-                    <Radio {...controlProps("BLUE")} sx={{ color: noteColor("BLUE"), "&.Mui-checked": { color: noteColor("BLUE"), }, }} />
-                    <Radio {...controlProps("PURPLE")} sx={{ color: noteColor("PURPLE"), "&.Mui-checked": { color: noteColor("PURPLE"), }, }} />
-                  </div>
-                </FormControl>
-                <FormControl>
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                      label="Data"
-                      value={valueDatePicker}
-                      inputFormat="DD-MM-YYYY"
-                      onChange={(newValue) => { setValueDatePicker(newValue); setValue("datePicker", newValue); }}
-                      renderInput={(params) => <TextField {...params} />}
-                    />
-                  </LocalizationProvider>
-                  <FormHelperText>{errors.datePicker?.message}</FormHelperText>
-                </FormControl>
-                <FormControl>
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <TimePicker
-                      label="Horário"
-                      value={valueTimePicker}
-                      inputFormat="HH:mm"
-                      onChange={(newValue) => { setValueTimePicker(newValue); setValue("timePicker", newValue); }}
-                      renderInput={(params) => <TextField {...params} />}
-                    />
-                  </LocalizationProvider>
-                  <FormHelperText>{errors?.timePicker?.message}</FormHelperText>
-                </FormControl>
-                <Button variant="contained" type="submit" onClick={() => {
-                  setValue("descriptionTasks", "Task");
-                }}>
-                  Criar
-                </Button>
-              </Box>
-            </form>
-          </Modal>
-        </div>
+        <Div100>
+          {alertErrorNote !== "" && (<Alert severity="error"><>{alertErrorNote}</></Alert>)} {alertSuccessNote !== "" && (<Alert severity="success"><>{alertSuccessNote}</></Alert>)}
+        </Div100>
+        <Button onClick={handleOpenModalNewNote} color="primary" variant="outlined" startIcon={<Add />}>Nota</Button>
+        <Modal open={openModalNewNote} onClose={handleCloseModalNewNote} aria-labelledby="modal-modal-title" aria-describedby="modal-modal-description">
+          <form onSubmit={handleSubmit(handleCreateNote)}>
+            <Box sx={boxStyle} style={{ width: "400px", display: "flex", flexDirection: "column" }}>
+              <FormControl>
+                <InputLabel>Título*</InputLabel>
+                <OutlinedInput
+                  label="Título*"
+                  {...register("title")}
+                  placeholder="Título"
+                  endAdornment={<InputAdornment position="end"><span style={{ color: `${title.length > 40 ? "red" : "gray"}`, }}>  {title.length}     </span>/40    </InputAdornment>}
+                  onChange={(event) => { setTitle(event.target.value); }} />
+                <FormHelperText>{errors.title?.message}</FormHelperText>
+              </FormControl>
+              <FormControl>
+                <InputLabel>Descrição</InputLabel>
+                <OutlinedInput
+                  label="Descrição"
+                  {...register("descriptionNotes")}
+                  placeholder="Descrição"
+                  endAdornment={<InputAdornment position="end"><span style={{ color: `${descriptionNotes.length > 200 ? "red" : "gray"}`, }}>{descriptionNotes.length}</span>/200</InputAdornment>}
+                  onChange={(event) => { setDescriptionNotes(event.target.value); }} />
+                <FormHelperText>{errors.descriptionNotes?.message}</FormHelperText>
+              </FormControl>
+              <FormControl style={{ display: "flex", justifyContent: "space-around", alignItems: "center", flexDirection: "row", }}>
+                <Typography color={"gray"}>Cor</Typography>
+                <>
+                  <Radio {...controlProps("RED")} sx={{ color: noteColor("RED"), "&.Mui-checked": { color: noteColor("RED"), }, }} />
+                  <Radio {...controlProps("ORANGE")} sx={{ color: noteColor("ORANGE"), "&.Mui-checked": { color: noteColor("ORANGE"), }, }} />
+                  <Radio {...controlProps("YELLOW")} sx={{ color: noteColor("YELLOW"), "&.Mui-checked": { color: noteColor("YELLOW"), }, }} />
+                  <Radio {...controlProps("CYAN")} sx={{ color: noteColor("CYAN"), "&.Mui-checked": { color: noteColor("CYAN"), }, }} />
+                  <Radio {...controlProps("BLUE")} sx={{ color: noteColor("BLUE"), "&.Mui-checked": { color: noteColor("BLUE"), }, }} />
+                  <Radio {...controlProps("PURPLE")} sx={{ color: noteColor("PURPLE"), "&.Mui-checked": { color: noteColor("PURPLE"), }, }} />
+                </>
+              </FormControl>
+              <FormControl>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Data"
+                    value={valueDatePicker}
+                    inputFormat="DD-MM-YYYY"
+                    onChange={(newValue) => { setValueDatePicker(newValue); setValue("datePicker", newValue); }}
+                    renderInput={(params) => <TextField {...params} />}
+                  />
+                </LocalizationProvider>
+                <FormHelperText>{errors.datePicker?.message}</FormHelperText>
+              </FormControl>
+              <FormControl>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <TimePicker
+                    label="Horário"
+                    value={valueTimePicker}
+                    inputFormat="HH:mm"
+                    onChange={(newValue) => { setValueTimePicker(newValue); setValue("timePicker", newValue); }}
+                    renderInput={(params) => <TextField {...params} />}
+                  />
+                </LocalizationProvider>
+                <FormHelperText>{errors?.timePicker?.message}</FormHelperText>
+              </FormControl>
+              <Button variant="contained" type="submit" onClick={() => {
+                setValue("descriptionTasks", "Task");
+              }}>
+                Criar
+              </Button>
+            </Box>
+          </form>
+        </Modal>
       </Header>
       <Cards>
         {userNotes?.map((item, index) => (
@@ -396,10 +405,10 @@ export function Reminders() {
         aria-describedby="modal-modal-description"
       >
         <Box sx={boxStyle} style={{ width: 625 }} >
-          <div style={{ width: "100%" }}>
-            {alertErrorTask !== "" && (<Alert severity="error"> <div>{alertErrorTask}</div> </Alert>)} {alertSuccessTask !== "" && (<Alert severity="success"> <div>{alertSuccessTask}</div> </Alert>)}
-          </div>
-          <div style={{ width: "100%", display: "flex", justifyContent: "center", alignItems: "center", }}>
+          <Div100>
+            {alertErrorTask !== "" && (<Alert severity="error"> <>{alertErrorTask}</> </Alert>)} {alertSuccessTask !== "" && (<Alert severity="success"> <>{alertSuccessTask}</> </Alert>)}
+          </Div100>
+          <Div100 className="center" >
             {
               editNote ?
                 (
@@ -430,14 +439,14 @@ export function Reminders() {
                       </FormControl>
                       <FormControl style={{ display: "flex", justifyContent: "space-around", alignItems: "center", flexDirection: "row", }}>
                         <Typography color={"gray"}>Cor</Typography>
-                        <div>
+                        <>
                           <Radio {...controlProps("RED")} sx={{ color: noteColor("RED"), "&.Mui-checked": { color: noteColor("RED"), }, }} />
                           <Radio {...controlProps("ORANGE")} sx={{ color: noteColor("ORANGE"), "&.Mui-checked": { color: noteColor("ORANGE"), }, }} />
                           <Radio {...controlProps("YELLOW")} sx={{ color: noteColor("YELLOW"), "&.Mui-checked": { color: noteColor("YELLOW"), }, }} />
                           <Radio {...controlProps("CYAN")} sx={{ color: noteColor("CYAN"), "&.Mui-checked": { color: noteColor("CYAN"), }, }} />
                           <Radio {...controlProps("BLUE")} sx={{ color: noteColor("BLUE"), "&.Mui-checked": { color: noteColor("BLUE"), }, }} />
                           <Radio {...controlProps("PURPLE")} sx={{ color: noteColor("PURPLE"), "&.Mui-checked": { color: noteColor("PURPLE"), }, }} />
-                        </div>
+                        </>
                       </FormControl>
                       <div className="center" style={{ gap: 20, marginTop: 20 }}>
                         <Button color="success" variant="contained" type="submit" onClick={() => {
@@ -462,22 +471,22 @@ export function Reminders() {
                         {selectedItem?.description}
                       </Typography>
                     </div>
-                    <div>
+                    <>
                       <IconButton onClick={handleClickEditNote}>
                         <Edit color="primary" />
                       </IconButton>
                       <IconButton onClick={handleDeleteNote}>
                         <Delete color="error" />
                       </IconButton>
-                    </div>
+                    </>
                   </>
                 )
             }
-          </div>
+          </Div100>
           {
             !editNote &&
             <>
-              <div className="center" style={{ width: "100%", height: "5rem", }}>
+              <Div100 className="center" style={{ height: "5rem", }}>
                 <Button onClick={() => { setNewTask(true); }} style={{ display: `${NewTask ? "none" : "flex"}` }} color="primary" variant="outlined" startIcon={<Add />} >
                   Adicionar item
                 </Button>
@@ -495,30 +504,30 @@ export function Reminders() {
                         {errors.descriptionTasks?.message}
                       </FormHelperText>
                     </FormControl>
-                    <div>
+                    <>
                       <IconButton type="submit" onClick={() => { setValue("title", "Task"); }}>
                         <Done color="success" />
                       </IconButton>
                       <IconButton onClick={() => { setNewTask(false); }}>
                         <Cancel color="error" />
                       </IconButton>
-                    </div>
+                    </>
                   </form>
                 )}
-              </div>
-              <div style={{ width: "100%", maxHeight: "500px", display: "flex", flexDirection: "column", overflowY: "scroll" }} >
+              </Div100>
+              <Div100 style={{ maxHeight: "500px", display: "flex", flexDirection: "column", overflowY: "scroll" }} >
                 {selectedItem?.taskNotes?.map((task, index) => (
-                  <div key={index} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", }}>
+                  <Div100 key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", }}>
                     <Checkbox checked={task.status === "COMPLETE"} onClick={() => { setIsChange(true); handleUpdateTask(task); }} color="success" />
-                    <span style={{ width: "100%", justifyContent: "flex-start" }}>
+                    <Div100 style={{ justifyContent: "flex-start" }}>
                       {task.description}
-                    </span>
+                    </Div100>
                     <IconButton onClick={() => { handleDeleteTask(task); }}>
                       <Delete color="error" />
                     </IconButton>
-                  </div>
+                  </Div100>
                 ))}
-              </div>
+              </Div100>
             </>
           }
         </Box>
